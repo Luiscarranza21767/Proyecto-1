@@ -97,10 +97,10 @@ ISR:
 RTMR0:
     BCF INTCON, 2	; Limpia la bandera de interrupción
     BANKSEL TMR0	
-    INCF CONT10MS	; Incrementa la variable del TMR0
+    INCF CONT10MS	; Incrementa la variable de 10 ms
     MOVLW 217		; Carga el valor de n al TMR0
     MOVWF TMR0	
-    INCF CONTMUX
+    INCF CONTMUX	; Incrementa variable para el multiplexor
     GOTO POP
     
 POP:			    ; Regresar valores de W y de STATUS
@@ -108,7 +108,7 @@ POP:			    ; Regresar valores de W y de STATUS
     MOVWF STATUS
     SWAPF W_TEMP, F
     SWAPF W_TEMP, W
-    RETFIE
+    RETFIE		    ; Regresa de la interrupción
 
 ; ******************************************************************************
 ; Código Principal
@@ -162,13 +162,14 @@ MAIN:
     
     BANKSEL WPUB
     MOVLW 11111000B ; Solo bit 7 y 6 son entradas con pull-up e ITO
-    MOVWF IOCB
-    MOVWF WPUB
+    MOVWF IOCB	    ; Interrupt on change
+    MOVWF WPUB	    ; Pull ups del puerto B
     
     BANKSEL TMR0
-    MOVLW 217
+    MOVLW 217	    ; Valor calculado para 10 ms
     MOVWF TMR0	    ; Se carga el valor de TMR0
-    CLRF CONT10MS
+	
+    CLRF CONT10MS   ; Se limpian todas las variables antes de iniciar
     CLRF CONTMUX
     CLRF CONTSEG
     CLRF CONTSEG2
@@ -190,48 +191,48 @@ VERIRELOJ:
     SUBLW 100		; Resta el valor a 100
     BTFSS STATUS, 2	; Revisa si el resultado es 0
     GOTO VERIRELOJ	; Si no es 0 regresa a verificación del reloj
-    CLRF CONT10MS	; Si es 0 limpia la variable y vuelve al loop
+    CLRF CONT10MS	; Si es 0 limpia la variable
     
     
-    INCF CONTSEG, F
+    INCF CONTSEG, F	; Incrementa el primer display de segundos
     MOVF CONTSEG, W
-    SUBLW 10
+    SUBLW 10		; Resta a 10 para verificar si debe incrementar el 2do
     BTFSS STATUS, 2
-    GOTO LOOP
-    INCF CONTSEG2
-    CLRF CONTSEG
+    GOTO LOOP		; Si no es 0 regresa al loop
+    INCF CONTSEG2	; Si es 0 incrementa segundo display
+    CLRF CONTSEG	; Reinicia el primer display
     
-    MOVF CONTSEG2, W
-    SUBLW 6
-    BTFSS STATUS, 2
-    GOTO LOOP
-    INCF CONTMIN, F
-    CLRF CONTSEG
+    MOVF CONTSEG2, W	; Mueve el valor del display 2 a W
+    SUBLW 6		; Lo resta a 6
+    BTFSS STATUS, 2	; Si el resultado es 0 salta la instrucción 
+    GOTO LOOP		; Si no es 0 regresa al loop
+    INCF CONTMIN, F	; Incrementa el contador de minutos
+    CLRF CONTSEG	; Limpia ambos contadores de segundos
     CLRF CONTSEG2
     
-    MOVF CONTMIN, W
-    SUBLW 10
+    MOVF CONTMIN, W	; Mueve el valor del display de minutos a W
+    SUBLW 10		; Lo resta a 10
     BTFSS STATUS, 2
-    GOTO LOOP
-    INCF CONTMIN2, F
-    CLRF CONTMIN
+    GOTO LOOP		; Si el resultado no es 0 regresa al loop
+    INCF CONTMIN2, F	; Si es 0 incrementa el segundo display de minutos
+    CLRF CONTMIN	; Limpia el contador de minutos
     
-    MOVF CONTMIN2, W
-    SUBLW 6
-    BTFSS STATUS, 2
-    GOTO LOOP
-    INCF CONTHOR, F
-    CLRF CONTMIN
+    MOVF CONTMIN2, W	; Mueve el valor del segundo display de minutos a W
+    SUBLW 6		; Resta el valor a 6
+    BTFSS STATUS, 2	
+    GOTO LOOP		; Si el resultado es 0 regresa al loop
+    INCF CONTHOR, F	; Si es 0 incrementa el contador de hora
+    CLRF CONTMIN	; Limpia el resto de variables del reloj
     CLRF CONTMIN2
     CLRF CONTSEG
     CLRF CONTSEG2
     
-    MOVF CONTHOR, W
-    SUBLW 10
-    BTFSS STATUS, 2
-    GOTO LOOP
-    INCF CONTHOR2, F
-    CLRF CONTHOR
+    MOVF CONTHOR, W	; Mueve el valor del display de horas a W   
+    SUBLW 10		; Resta el valor a 10
+    BTFSS STATUS, 2	
+    GOTO LOOP		; Si el resultado no es 0 regresa al loop
+    INCF CONTHOR2, F	; Incrementa el segundo display de horas
+    CLRF CONTHOR	; Limpia todas
     CLRF CONTMIN
     CLRF CONTMIN2
     CLRF CONTSEG
