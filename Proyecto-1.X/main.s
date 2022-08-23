@@ -52,17 +52,21 @@ PSECT udata_shr
     DS 1
  STATUS_TEMP:	; Variable para almacenar STATUS durante interrupciones
     DS 1
- CONT10MS:
+ CONT10MS:	; Contador de 10 ms
     DS 1
- CONTMUX:
+ CONTMUX:	; Contador para la multiplexación cada 50 ms
     DS 1
- CONTSEG:
+ CONTSEG:	; Contador para el display de segundos
     DS 1
- CONTSEG2:
+ CONTSEG2:	; Contador para el segundo display de segundos
     DS 1
- CONTMIN:
+ CONTMIN:	; Contador para el display de minutos
     DS 1
- CONTMIN2:
+ CONTMIN2:	; Contador para el segundo display de minutos
+    DS 1
+ CONTHOR:	; Contador para el display de horas
+    DS 1
+ CONTHOR2:	; Contador para el segundo display de horas
     DS 1
     
 ; ******************************************************************************
@@ -170,21 +174,24 @@ MAIN:
     CLRF CONTSEG2
     CLRF CONTMIN
     CLRF CONTMIN2   
+    CLRF CONTHOR
+    CLRF CONTHOR2
     
 LOOP:
 
     
-VERIFICACION:
+VERIRELOJ:
     MOVF CONTMUX, W	; Carga el valor de la variable a W
-    SUBLW 5		; Resta el valor a 50
+    SUBLW 5		; Resta el valor a 5
     BTFSC STATUS, 2	; Revisa si el resultado es 0
-    CALL MULTIPLEX
+    CALL MULTIPLEX	; Llama para la multiplexación cada 50ms
     
     MOVF CONT10MS, W	; Carga el valor de la variable a W
-    SUBLW 100		; Resta el valor a 50
+    SUBLW 100		; Resta el valor a 100
     BTFSS STATUS, 2	; Revisa si el resultado es 0
-    GOTO VERIFICACION	; Si no es 0 regresa a verificación
+    GOTO VERIRELOJ	; Si no es 0 regresa a verificación del reloj
     CLRF CONT10MS	; Si es 0 limpia la variable y vuelve al loop
+    
     
     INCF CONTSEG, F
     MOVF CONTSEG, W
@@ -193,6 +200,54 @@ VERIFICACION:
     GOTO LOOP
     INCF CONTSEG2
     CLRF CONTSEG
+    
+    MOVF CONTSEG2, W
+    SUBLW 6
+    BTFSS STATUS, 2
+    GOTO LOOP
+    INCF CONTMIN, F
+    CLRF CONTSEG
+    CLRF CONTSEG2
+    
+    MOVF CONTMIN, W
+    SUBLW 10
+    BTFSS STATUS, 2
+    GOTO LOOP
+    INCF CONTMIN2, F
+    CLRF CONTMIN
+    
+    MOVF CONTMIN2, W
+    SUBLW 6
+    BTFSS STATUS, 2
+    GOTO LOOP
+    INCF CONTHOR, F
+    CLRF CONTMIN
+    CLRF CONTMIN2
+    CLRF CONTSEG
+    CLRF CONTSEG2
+    
+    MOVF CONTHOR, W
+    SUBLW 10
+    BTFSS STATUS, 2
+    GOTO LOOP
+    INCF CONTHOR2, F
+    CLRF CONTHOR
+    CLRF CONTMIN
+    CLRF CONTMIN2
+    CLRF CONTSEG
+    CLRF CONTSEG2
+    
+    MOVF CONTHOR2, W
+    SUBLW 24
+    BTFSS STATUS, 2
+    GOTO LOOP
+    CLRF CONTHOR
+    CLRF CONTHOR2
+    CLRF CONTMIN
+    CLRF CONTMIN2
+    CLRF CONTSEG
+    CLRF CONTSEG2
+    
     
     GOTO LOOP
     
@@ -262,7 +317,7 @@ DISP3:
 DISP4:
     MOVLW 8
     MOVWF PORTD
-    MOVF CONTMIN, W
+    MOVF CONTMIN2, W
     CALL Table
     MOVWF PORTA
     CLRF CONTMUX
@@ -271,7 +326,7 @@ DISP4:
 DISP5:
     MOVLW 16
     MOVWF PORTD
-    MOVF CONTMIN, W
+    MOVF CONTHOR, W
     CALL Table
     MOVWF PORTA    
     CLRF CONTMUX
@@ -280,7 +335,7 @@ DISP5:
 DISP6:
     MOVLW 32
     MOVWF PORTD
-    MOVF CONTMIN, W
+    MOVF CONTHOR2, W
     CALL Table
     MOVWF PORTA    
     CLRF CONTMUX
@@ -304,12 +359,6 @@ Table:
     RETLW 00000111B ; Regresa 7
     RETLW 01111111B ; Regresa 8
     RETLW 01101111B ; Regresa 9    
-    RETLW 01110111B ; Regresa A
-    RETLW 01111111B ; Regresa B
-    RETLW 00111001B ; Regresa C
-    RETLW 00111111B ; Regresa D
-    RETLW 01111001B ; Regresa E
-    RETLW 01110001B ; Regresa F
     
 ;*******************************************************************************
 ; FIN DEL CÓDIGO
