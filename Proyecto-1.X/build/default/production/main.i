@@ -2584,6 +2584,8 @@ ESTADO0_ISR: ; Reloj normal
 
 ESTADO1_ISR: ; Cambio de minutos
     BANKSEL PORTB
+    BTFSS PORTB, 0
+    DECF ESTADO ; TEMPORALLLLL
     BTFSS PORTB, 1
     BSF CAMBIO, 0
     BTFSS PORTB, 2
@@ -2678,7 +2680,15 @@ MAIN:
     CLRF CONTHOR
     CLRF CONTHOR2
 
+; ******************************************************************************
+; LOOP PRINCIPAL
+; ******************************************************************************
+
 LOOP:
+    MOVF ESTADO, W
+    SUBLW 0
+    BTFSC STATUS, 2
+    GOTO VERIRELOJ ; Estado de cambio de minutos
 
     MOVF ESTADO, W
     SUBLW 1
@@ -2690,7 +2700,9 @@ LOOP:
 ; BTFSC STATUS, 2
 ; GOTO CAMBIOMIN2 ; Estado de cambio de minutos
 
-
+; ******************************************************************************
+; MODO RELOJ
+; ******************************************************************************
 VERIRELOJ:
     MOVF CONTMUX, W ; Carga el valor de la variable a W
     SUBLW 7 ; Resta el valor a 5
@@ -2727,6 +2739,7 @@ RELOJ:
     CLRF CONTSEG ; Limpia ambos contadores de segundos
     CLRF CONTSEG2
 
+INCREMENTOMIN:
     MOVF CONTMIN, W ; Mueve el valor del display de minutos a W
     SUBLW 10 ; Lo resta a 10
     BTFSS STATUS, 2
@@ -2738,29 +2751,54 @@ RELOJ:
     SUBLW 6 ; Resta el valor a 6
     BTFSS STATUS, 2
     GOTO LOOP ; Si el resultado es 0 regresa al loop
-    INCF CONTHOR, F ; Si es 0 incrementa el contador de hora
     CLRF CONTMIN ; Limpia el resto de variables del reloj
     CLRF CONTMIN2
     CLRF CONTSEG
     CLRF CONTSEG2
 
+    MOVF ESTADO, W
+    SUBLW 0
+    BTFSC STATUS, 2
+    GOTO INCREMENTOHOR
+    GOTO LOOP
+
+INCREMENTOHOR:
+    INCF CONTHOR, F ; Si es 0 incrementa el contador de hora
     MOVF CONTHOR, W ; Mueve el valor del display de horas a W
     SUBLW 10 ; Resta el valor a 10
     BTFSS STATUS, 2
-    GOTO LOOP ; Si el resultado no es 0 regresa al loop
+    GOTO REVCAMBIOHOR ; Si el resultado no es 0 regresa al loop
     INCF CONTHOR2, F ; Incrementa el segundo display de horas
     CLRF CONTHOR ; Limpia todas
-    CLRF CONTMIN
-    CLRF CONTMIN2
-    CLRF CONTSEG
-    CLRF CONTSEG2
 
-    MOVF CONTHOR2, W
-    SUBLW 24
+    MOVF ESTADO, W
+    SUBLW 0
     BTFSS STATUS, 2
     GOTO LOOP
+    CLRF CONTMIN
+    CLRF CONTMIN2
+    CLRF CONTSEG
+    CLRF CONTSEG2
+
+REVCAMBIOHOR:
+    MOVF CONTHOR2, W
+    SUBLW 2
+    BTFSS STATUS, 2
+    GOTO LOOP
+
+    MOVF CONTHOR, W
+    SUBLW 4
+    BTFSS STATUS, 2
+    GOTO LOOP
+
     CLRF CONTHOR
     CLRF CONTHOR2
+
+    MOVF ESTADO, W
+    SUBLW 0
+    BTFSS STATUS, 2
+    GOTO LOOP
+
     CLRF CONTMIN
     CLRF CONTMIN2
     CLRF CONTSEG
@@ -2768,6 +2806,9 @@ RELOJ:
 
     GOTO LOOP
 
+; ******************************************************************************
+; MULTIPLEXADO
+; ******************************************************************************
 MULTIPLEX:
     MOVF PORTD, W
     SUBLW 0
@@ -2859,7 +2900,7 @@ DISP6:
     RETURN
 
 ; ******************************************************************************
-; Tablas
+; Tabla para multiplexor
 ; ******************************************************************************
 Table:
     CLRF PCLATH
@@ -2877,85 +2918,71 @@ Table:
     RETLW 01111111B ; Regresa 8
     RETLW 01101111B ; Regresa 9
 
+; ******************************************************************************
+; MODO CAMBIO DE MINUTOS/HORA
+; ******************************************************************************
 CAMBIOMIN:
+    CLRF CONTSEG
+    CLRF CONTSEG2
     BTFSS CAMBIO, 0
     GOTO DECMIN
     BCF CAMBIO, 0
-    MOVF CONTMIN, W
-    CALL INCREMENTO
-    MOVF CONTCAMBIOS, W
-    MOVWF CONTMIN
+    INCF CONTMIN, F
+    GOTO INCREMENTOMIN
 
 DECMIN:
     BTFSS CAMBIO, 1
-    GOTO CAMBIOMIN2
+    GOTO CAMBIOHOR
     BCF CAMBIO, 1
+    DECF CONTMIN, F
     MOVF CONTMIN, W
-    CALL DECREMENTO
-    MOVF CONTCAMBIOS, W
+    SUBLW -1
+    BTFSS STATUS, 2
+    GOTO VERIRELOJ
+    MOVLW 9
     MOVWF CONTMIN
 
-CAMBIOMIN2:
-    BTFSS CAMBIO, 2
-    GOTO DECMIN2
-    BCF CAMBIO, 2
+    DECF CONTMIN2, F
     MOVF CONTMIN2, W
-    CALL INCREMENTO2
-    MOVF CONTCAMBIOS, W
+    SUBLW -1
+    BTFSS STATUS, 2
+    GOTO VERIRELOJ
+    MOVLW 5
     MOVWF CONTMIN2
+    GOTO VERIRELOJ
 
-DECMIN2:
+CAMBIOHOR:
+    BTFSS CAMBIO, 2
+    GOTO DECHOR
+    BCF CAMBIO, 2
+    GOTO INCREMENTOHOR
+
+DECHOR:
     BTFSS CAMBIO, 3
     GOTO VERIRELOJ
     BCF CAMBIO, 3
-    MOVF CONTMIN2, W
-    CALL DECREMENTO2
-    MOVF CONTCAMBIOS, W
-    MOVWF CONTMIN2
+    DECF CONTHOR, F
+    MOVF CONTHOR, W
+    SUBLW -1
+    BTFSS STATUS, 2
     GOTO VERIRELOJ
 
-INCREMENTO:
-    MOVWF CONTCAMBIOS
-    INCF CONTCAMBIOS, F
-    MOVF CONTCAMBIOS, W
-    SUBLW 10
-    BTFSS STATUS, 2
-    RETURN
-    CLRF CONTCAMBIOS
-    RETURN
-
-DECREMENTO:
-    MOVWF CONTCAMBIOS
-    DECF CONTCAMBIOS, F
-    MOVF CONTCAMBIOS, W
+    DECF CONTHOR2, F
+    MOVF CONTHOR2, W
     SUBLW -1
-    BTFSS STATUS, 2
-    RETURN
+    BTFSC STATUS, 2
+    GOTO RESETHOR
+
     MOVLW 9
-    MOVWF CONTCAMBIOS
-    RETURN
+    MOVWF CONTHOR
+    GOTO VERIRELOJ
 
-;Agregados para mostrar error
-INCREMENTO2:
-    MOVWF CONTCAMBIOS
-    INCF CONTCAMBIOS, F
-    MOVF CONTCAMBIOS, W
-    SUBLW 6
-    BTFSS STATUS, 2
-    RETURN
-    CLRF CONTCAMBIOS
-    RETURN
-
-DECREMENTO2:
-    MOVWF CONTCAMBIOS
-    DECF CONTCAMBIOS, F
-    MOVF CONTCAMBIOS, W
-    SUBLW -1
-    BTFSS STATUS, 2
-    RETURN
-    MOVLW 5
-    MOVWF CONTCAMBIOS
-    RETURN
+RESETHOR:
+    MOVLW 2
+    MOVWF CONTHOR2
+    MOVLW 3
+    MOVWF CONTHOR
+    GOTO VERIRELOJ
 
 ;*******************************************************************************
 ; FIN DEL CÓDIGO
