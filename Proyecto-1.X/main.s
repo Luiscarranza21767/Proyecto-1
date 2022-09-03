@@ -129,14 +129,15 @@ RRBIF:
 ESTADO0_ISR:		; Reloj normal
     BANKSEL PORTB
     BTFSS PORTB, 0
-    INCF ESTADO
+    INCF ESTADO, F
     BCF INTCON, 0
     GOTO POP
 
 ESTADO1_ISR:		; Cambio de minutos
     BANKSEL PORTB
     BTFSS PORTB, 0
-    DECF ESTADO	; TEMPORALLLLL
+    CLRF ESTADO	; TEMPORALLLLL
+    
     BTFSS PORTB, 1
     BSF CAMBIO, 0
     BTFSS PORTB, 2
@@ -145,8 +146,6 @@ ESTADO1_ISR:		; Cambio de minutos
     BSF CAMBIO, 2
     BTFSS PORTB, 4
     BSF CAMBIO, 3
-    BTFSS PORTB, 0
-    INCF ESTADO
     
     BCF INTCON, 0
     GOTO POP
@@ -190,7 +189,7 @@ MAIN:
     
     BSF OPTION_REG, 2	
     BSF OPTION_REG, 1
-    BSF OPTION_REG, 0	; Prescaler 1:256
+    BCF OPTION_REG, 0	; Prescaler 1:128
     
     BCF OPTION_REG, 7	; NO RBPU
     
@@ -245,18 +244,13 @@ LOOP:
     SUBLW 1
     BTFSC STATUS, 2
     GOTO CAMBIOMIN	; Estado de cambio de minutos
-    
-;    MOVF ESTADO, W
-;    SUBLW 2
-;    BTFSC STATUS, 2
-;    GOTO CAMBIOMIN2	; Estado de cambio de minutos
 
 ; ******************************************************************************
 ; MODO RELOJ
 ; ******************************************************************************      
 VERIRELOJ:
     MOVF CONTMUX, W	; Carga el valor de la variable a W
-    SUBLW 7		; Resta el valor a 5
+    SUBLW 14		; Resta el valor a 5
     BTFSC STATUS, 2	; Revisa si el resultado es 0
     CALL MULTIPLEX	; Llama para la multiplexación cada 50ms
     
@@ -264,16 +258,16 @@ VERIRELOJ:
     SUBLW 0
     BTFSC STATUS, 2
     GOTO RELOJ
+    
     GOTO LOOP
     
 RELOJ:    
     MOVF CONT10MS, W	; Carga el valor de la variable a W
-    SUBLW 100		; Resta el valor a 100
+    SUBLW 200		; Resta el valor a 100
     BTFSS STATUS, 2	; Revisa si el resultado es 0
     GOTO VERIRELOJ	; Si no es 0 regresa a verificación del reloj
     CLRF CONT10MS	; Si es 0 limpia la variable
-    
-    
+     
     INCF CONTSEG, F	; Incrementa el primer display de segundos
     MOVF CONTSEG, W
     SUBLW 10		; Resta a 10 para verificar si debe incrementar el 2do
@@ -311,6 +305,7 @@ INCREMENTOMIN:
     SUBLW 0
     BTFSC STATUS, 2
     GOTO INCREMENTOHOR
+    
     GOTO LOOP
     
 INCREMENTOHOR:  
@@ -420,7 +415,6 @@ DISP3:
     CALL Table
     MOVWF PORTA
     CLRF CONTMUX
-    
     RETURN
     
 DISP4:
