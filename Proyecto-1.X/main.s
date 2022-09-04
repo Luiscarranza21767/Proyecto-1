@@ -150,26 +150,31 @@ RRBIF:
     BTFSC STATUS, 2
     GOTO ESTADO2_ISR	; Estado de cambio de hora/minutos
     
+    MOVF ESTADO, W
+    SUBLW 3
+    BTFSC STATUS, 2
+    GOTO ESTADO3_ISR	; Estado de cambio de hora/minutos
+    
     GOTO POP
    
 ESTADO0_ISR:		; Reloj normal
     BANKSEL PORTB
     BTFSS PORTB, 0	; Revisa si se presiona el cambio de modo
-    INCF ESTADO, F	; Si se presiona incrementa ESTADO
+    CALL PUSH0_PRESSED	; 
     BCF INTCON, 0	; Apaga bandera de interrupción de puerto b
     GOTO POP
     
 ESTADO1_ISR:		; Reloj normal
     BANKSEL PORTB
     BTFSS PORTB, 0	; Revisa si se presiona el cambio de modo
-    INCF ESTADO, F	; Si se presiona incrementa ESTADO
+    CALL PUSH0_PRESSED	;
     BCF INTCON, 0	; Apaga bandera de interrupción de puerto b
     GOTO POP
 
 ESTADO2_ISR:		; Cambio de minutos
     BANKSEL PORTB
     BTFSS PORTB, 0	; Revisa si se presiona el cambio de modo
-    CLRF ESTADO	; TEMPORALLLLL
+    CALL PUSH0_PRESSED	;
     
     BTFSS PORTB, 1	; Revisa si se presiona el botón de incremento min
     CALL PUSH1_PRESSED	; Si si llama función para antirrebotes
@@ -182,7 +187,35 @@ ESTADO2_ISR:		; Cambio de minutos
     
     BCF INTCON, 0	; Apaga bandera de interrupción del puerto
     GOTO POP
-  
+
+ESTADO3_ISR:		; Cambio de minutos
+    BANKSEL PORTB
+    BTFSS PORTB, 0	; Revisa si se presiona el cambio de modo
+    CALL PUSH0_PRESSED	;
+    
+    BTFSS PORTB, 1	; Revisa si se presiona el botón de incremento min
+    CALL PUSH1_PRESSED	; Si si llama función para antirrebotes
+    BTFSS PORTB, 2	; Revisa si se presionó el botón de decremento min
+    CALL PUSH2_PRESSED	
+    BTFSS PORTB, 3	; Revisa si se presionó el botón de incremento hor
+    CALL PUSH3_PRESSED
+    BTFSS PORTB, 4	; Revisa si se presionó el botón de decremento hor
+    CALL PUSH4_PRESSED
+    
+    BCF INTCON, 0	; Apaga bandera de interrupción del puerto
+    GOTO POP
+
+PUSH0_PRESSED:		; Subrutina de antirrebotes
+    BTFSS PORTB, 1	; Revisa si sigue presionado el botón
+    GOTO $-1		; Si sigue presionado revisa de nuevo
+    INCF ESTADO, F
+    MOVF ESTADO, W
+    SUBLW 4
+    BTFSC STATUS, 2
+    CLRF ESTADO
+    
+    RETURN		; Regresa de la subrutina
+    
 PUSH1_PRESSED:		; Subrutina de antirrebotes
     BTFSS PORTB, 1	; Revisa si sigue presionado el botón
     GOTO $-1		; Si sigue presionado revisa de nuevo
@@ -321,18 +354,33 @@ LOOP:
     SUBLW 2		; Lo resta a 2
     BTFSC STATUS, 2	; Si es 0 está en modo cambio de hora/min
     GOTO CAMBIOMIN	; Estado de cambio de minutos
+    
+    MOVF ESTADO, W	; Revisa el valor de ESTADO
+    SUBLW 3		; Lo resta a 2
+    BTFSC STATUS, 2	; Si es 0 está en modo cambio de hora/min
+    GOTO CAMBIODIA	; Estado de cambio de minutos
 
 ; ******************************************************************************
 ; MODO RELOJ
 ; ******************************************************************************      
 VERIRELOJ:
     MOVF ESTADO, W	; Revisa de nuevo el valor de ESTADO
+    SUBLW 0		; Si está en el modo cambio minutos
+    BTFSC STATUS, 2
+    BCF VRELOJ, 0	; Carga las variables de seg, min y hor al display
+    
+    MOVF ESTADO, W	; Revisa de nuevo el valor de ESTADO
     SUBLW 2		; Si está en el modo cambio minutos
     BTFSC STATUS, 2
     CALL MRELOJ		; Carga las variables de seg, min y hor al display
     
+    MOVF ESTADO, W	; Revisa de nuevo el valor de ESTADO
+    SUBLW 3		; Si está en el modo cambio minutos
+    BTFSC STATUS, 2
+    CALL MFECHA		; Carga las variables de seg, min y hor al display
+    
     MOVF CONTMUX, W	; Carga el valor de la variable a W
-    SUBLW 14		; Resta el valor a 1
+    SUBLW 1		; Resta el valor a 1
     BTFSC STATUS, 2	; Revisa si el resultado es 0
     CALL MULTIPLEX	; Llama para la multiplexación cada 5ms
     
@@ -743,36 +791,38 @@ TMES3:
     RETURN
     
 INCREMENTOMES:
-    INCF CONTMES, F
+    INCF CONTMES, F	; Terminó un mes, entonces incrementa el contador
     MOVF CONTMES, W
-    SUBLW 10
-    BTFSS STATUS, 2
+    SUBLW 10		; Revisa si el contador de unidades llega a 10
+    BTFSS STATUS, 2	; Si no es cero revisa si debe reiniciar el año
     GOTO REVMES
     
-    INCF CONTMES2, F
-    CLRF CONTMES
-    GOTO LOOP
+    INCF CONTMES2, F	; Si es cero entonces incrementa decenas
+    CLRF CONTMES	; Limpia la variable de mes
+    GOTO LOOP		; Regresa al LOOP
     
 REVMES:
-    MOVF CONTMES2, W
+    MOVF CONTMES2, W	; Revisa si decenas está en 1
     SUBLW 1
-    BTFSS STATUS, 2
+    BTFSS STATUS, 2	; Si no está en uno regresa al loop
     GOTO LOOP
     
-    MOVF CONTMES, W
+    MOVF CONTMES, W	; Si está en 1 revisa si quiere incrementar a 13    
     SUBLW 3
-    BTFSS STATUS, 2
+    BTFSS STATUS, 2	; Si no ha llegado regresa al loop
     GOTO LOOP
     
-    CLRF CONTMES
-    CLRF CONTMES2
+    MOVLW 1		; Si llegó cambia el mes a Enero de nuevo
+    MOVWF CONTMES
+    CLRF CONTMES2	; En enero CONTMES2 vale 0
     
-    GOTO LOOP
+    GOTO LOOP		; Regresa al LOOP
+    
 ; ******************************************************************************
 ; MODO CAMBIO DE MINUTOS/HORA
 ; ******************************************************************************      
 CAMBIOMIN:
-    BCF VRELOJ, 0	; Indica que ya no está en modo contador de reloj-fecha
+    BSF VRELOJ, 0	; Indica que ya no está en modo contador de reloj-fecha
     CLRF CONTSEG	; Limpia variable de segundos para ajustar la hora
     CLRF CONTSEG2
     BTFSS CAMBIO, 0	; Revisa si se presionó el cambio de unidades de min
@@ -835,8 +885,134 @@ RESETHOR:
     MOVLW 3		; Carga el valor de 3 a unidades
     MOVWF CONTHOR
     GOTO VERIRELOJ	; Regresa al loop del reloj
+   
+; ******************************************************************************
+; MODO CAMBIO DE DIA/MES
+; ******************************************************************************      
+CAMBIODIA:
+    BSF VRELOJ, 0	; Indica que ya no está en modo contador de reloj-fecha
+    BTFSS CAMBIO, 0	; Revisa si se presionó el cambio de unidades de min
+    GOTO DECDIA		; Si no revisa si se presionó el de decenas de min
+    BCF CAMBIO, 0	; Si si limpia la bandera del botón
+    GOTO INCREMENTODIA	; Procede a revisar cómo debe hacer el incremento
+			; Con ayuda de la subrutina del reloj
+ 
+DECDIA:
+    BTFSS CAMBIO, 1	; Revisa si se presionó el cambio de decenas de min
+    GOTO CAMBIOMES	; Si no se presionó revisa el cambio de horas
+    BCF CAMBIO, 1	; Si se presionó limpia la bandera del botón
+    
+    DECF CONTDIA, F	; Decrementa el contador de minutos
+    MOVF CONTDIA, W	
+    SUBLW 0		; Revisa si el valor actual es 0 restándole -1
+    BTFSS STATUS, 2	; Si la resta es cero es porque CONTMIN ya era -1
+    GOTO DECDIA2	; Si no es cero regresa al loop del reloj para multiplex
+    
+    MOVF CONTDIA2, W
+    SUBLW 0
+    BTFSC STATUS, 2
+    GOTO REVDECMES
+    
+    CLRF CONTDIA
+    GOTO VERIRELOJ
+    
+DECDIA2:
+    MOVF CONTDIA, W
+    SUBLW -1
+    BTFSS STATUS, 2
+    GOTO VERIRELOJ
+    MOVLW 9
+    MOVWF CONTDIA
+    DECF CONTDIA2, F
+    GOTO VERIRELOJ
+    
+REVDECMES:
+    CALL DETERMINARMES
+    
+    MOVF DETMES, W	; Si DETMES es 1 entonces tiene 31 días
+    SUBLW 1
+    BTFSC STATUS, 2
+    GOTO DECDIA31	; Revisa si está en 31 
+    
+    MOVF DETMES, W	; Si DETMES es 2 entonces tiene 28 días
+    SUBLW 2
+    BTFSC STATUS, 2 
+    GOTO DECDIA28	; Revisa si está en 28
+    
+    MOVF DETMES, W	; Si DETMES es 3 entonces tiene 30 días
+    SUBLW 3
+    BTFSC STATUS, 2
+    GOTO DECDIA30	; Revisa si está en 30
+        
+DECDIA31:
+    MOVLW 1		; Si es cero entonces reinicia a 9 unidades de minutos
+    MOVWF CONTDIA
+    
+    MOVLW 3
+    MOVWF CONTDIA2
+    
+    GOTO VERIRELOJ
+    
+DECDIA28:
+    MOVLW 8		; Si es cero entonces reinicia a 9 unidades de minutos
+    MOVWF CONTDIA
+    
+    MOVLW 2
+    MOVWF CONTDIA2
+    
+    GOTO VERIRELOJ
+    
+DECDIA30:
+    MOVLW 0		; Si es cero entonces reinicia a 9 unidades de minutos
+    MOVWF CONTDIA
+    
+    MOVLW 3
+    MOVWF CONTDIA2
+    
+    GOTO VERIRELOJ
+
+CAMBIOMES:
+    BTFSS CAMBIO, 2	; Revisa si se presionó para incrementar la hora
+    GOTO DECMES		; Si no revisa si se presionó para decrementarla 
+    BCF CAMBIO, 2	; Si si limpia la bandera del botón
+    GOTO INCREMENTOMES	; Llama a la subrutina del reloj que incrementa la hora
+ 
+DECMES:
+    BTFSS CAMBIO, 3	; Revisa si se presionó el botón de decremento hora
+    GOTO VERIRELOJ	; Si no regresa al loop de reloj para multiplexar
+    BCF CAMBIO, 3	; Si si limpia la bandera del botón
+    
+    DECF CONTMES, F	; Decrementa unidades de hora
+    MOVF CONTMES, W
+    SUBLW 0		; Revisa si ya es -1
+    BTFSS STATUS, 2 
+    GOTO DECMES2	; Si aún no lo es regresa al loop del reloj
+    
+    MOVF CONTMES2, W
+    SUBLW 0
+    BTFSS STATUS, 2
+    GOTO VERIRELOJ
+    
+    MOVLW 2
+    MOVWF CONTMES
+    MOVLW 1
+    MOVWF CONTMES2
+    GOTO VERIRELOJ
+
+DECMES2:
+    MOVF CONTMES, W
+    SUBLW -1
+    BTFSS STATUS, 2
+    GOTO VERIRELOJ
+    
+    DECF CONTMES2, F	; Si es -1 entonces decrementa las decenas de horas
+    
+    MOVLW 9		; Si no es -1 solo carga el valor de 9 a las unidades
+    MOVWF CONTMES
+    GOTO VERIRELOJ	; Regresa al loop del reloj
 
 ;*******************************************************************************
 ; FIN DEL CÓDIGO
 ;******************************************************************************* 
+    
 END
