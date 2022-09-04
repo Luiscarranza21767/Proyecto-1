@@ -6,7 +6,7 @@
 ; Proyecto: Proyecto de laboratorio 1
 ; Hardware PIC16F887
 ; Creado: 23/08/22
-; Última Modificación: 23/08/22
+; Última Modificación: 03/09/22
 ; ******************************************************************************
 
 PROCESSOR 16F887
@@ -46,7 +46,22 @@ PROCESSOR 16F887
 ; ******************************************************************************
 ; Variables
 ; ******************************************************************************
-				
+PSECT udata_bank0
+ VDISP1:
+    DS 1
+ VDISP2:
+    DS 1
+ VDISP3:
+    DS 1
+ VDISP4:
+    DS 1
+ VDISP5:
+    DS 1
+ VDISP6:
+    DS 1
+ VRELOJ:
+    DS 1
+    
 PSECT udata_shr
  W_TEMP:	; Variable para almacenar W durante interrupciones
     DS 1
@@ -71,10 +86,6 @@ PSECT udata_shr
  ESTADO:
     DS 1
  CAMBIO:
-    DS 1
- CONTCAMBIOS:
-    DS 1
- DISP:
     DS 1
     
 ; ******************************************************************************
@@ -218,8 +229,15 @@ MAIN:
 	
     
     CLRF ESTADO
-    CLRF CONTCAMBIOS
-    CLRF DISP
+    
+    CLRF VDISP1
+    CLRF VDISP2
+    CLRF VDISP3
+    CLRF VDISP4
+    CLRF VDISP5
+    CLRF VDISP6
+    
+    CLRF VRELOJ
     
     CLRF CONT10MS   ; Se limpian todas las variables antes de iniciar
     CLRF CONTMUX
@@ -238,7 +256,7 @@ LOOP:
     MOVF ESTADO, W
     SUBLW 0
     BTFSC STATUS, 2
-    GOTO VERIRELOJ	; Estado de cambio de minutos
+    CALL MRELOJ		; Estado de cambio de minutos
     
     MOVF ESTADO, W
     SUBLW 1
@@ -249,6 +267,11 @@ LOOP:
 ; MODO RELOJ
 ; ******************************************************************************      
 VERIRELOJ:
+    MOVF ESTADO, W
+    SUBLW 1
+    BTFSC STATUS, 2
+    CALL MRELOJ		; Estado de cambio de minutos
+    
     MOVF CONTMUX, W	; Carga el valor de la variable a W
     SUBLW 14		; Resta el valor a 5
     BTFSC STATUS, 2	; Revisa si el resultado es 0
@@ -298,8 +321,6 @@ INCREMENTOMIN:
     GOTO LOOP		; Si el resultado es 0 regresa al loop
     CLRF CONTMIN	; Limpia el resto de variables del reloj
     CLRF CONTMIN2
-    CLRF CONTSEG
-    CLRF CONTSEG2
     
     MOVF ESTADO, W
     SUBLW 0
@@ -321,10 +342,6 @@ INCREMENTOHOR:
     SUBLW 0
     BTFSS STATUS, 2
     GOTO LOOP
-    CLRF CONTMIN
-    CLRF CONTMIN2
-    CLRF CONTSEG
-    CLRF CONTSEG2
     
 REVCAMBIOHOR:
     MOVF CONTHOR2, W
@@ -345,10 +362,6 @@ REVCAMBIOHOR:
     BTFSS STATUS, 2
     GOTO LOOP
     
-    CLRF CONTMIN
-    CLRF CONTMIN2
-    CLRF CONTSEG
-    CLRF CONTSEG2
     
     GOTO LOOP
 
@@ -394,7 +407,7 @@ MULTIPLEX:
     
 DISP1:
     BSF PORTD, 0
-    MOVF CONTSEG, W
+    MOVF VDISP1, W
     CALL Table
     MOVWF PORTA
     CLRF CONTMUX
@@ -402,7 +415,7 @@ DISP1:
     
 DISP2:   
     INCF PORTD, F
-    MOVF CONTSEG2, W
+    MOVF VDISP2, W
     CALL Table
     MOVWF PORTA
     CLRF CONTMUX
@@ -411,7 +424,7 @@ DISP2:
 DISP3:
     MOVLW 4
     MOVWF PORTD
-    MOVF CONTMIN, W
+    MOVF VDISP3, W
     CALL Table
     MOVWF PORTA
     CLRF CONTMUX
@@ -420,7 +433,7 @@ DISP3:
 DISP4:
     MOVLW 8
     MOVWF PORTD
-    MOVF CONTMIN2, W
+    MOVF VDISP4, W
     CALL Table
     MOVWF PORTA
     CLRF CONTMUX
@@ -429,7 +442,7 @@ DISP4:
 DISP5:
     MOVLW 16
     MOVWF PORTD
-    MOVF CONTHOR, W
+    MOVF VDISP5, W
     CALL Table
     MOVWF PORTA    
     CLRF CONTMUX
@@ -438,7 +451,7 @@ DISP5:
 DISP6:
     MOVLW 32
     MOVWF PORTD
-    MOVF CONTHOR2, W
+    MOVF VDISP6, W
     CALL Table
     MOVWF PORTA    
     CLRF CONTMUX
@@ -463,6 +476,31 @@ Table:
     RETLW 01111111B ; Regresa 8
     RETLW 01101111B ; Regresa 9    
 
+; ******************************************************************************
+; MODO CAMBIO RELOJ
+; ****************************************************************************** 
+MRELOJ:
+    MOVF CONTSEG, W
+    MOVWF VDISP1
+    
+    MOVF CONTSEG2, W
+    MOVWF VDISP2
+    
+    MOVF CONTMIN, W
+    MOVWF VDISP3 
+    
+    MOVF CONTMIN2, W
+    MOVWF VDISP4
+    
+    MOVF CONTHOR, W
+    MOVWF VDISP5
+    
+    MOVF CONTHOR2, W
+    MOVWF VDISP6
+    
+    RETURN
+    
+    
 ; ******************************************************************************
 ; MODO CAMBIO DE MINUTOS/HORA
 ; ******************************************************************************      
