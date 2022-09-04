@@ -620,7 +620,7 @@ CAMBIOMES31:
     CLRF CONTDIA2	; La variable de decenas debe regresar a 0
     
     BTFSS VRELOJ, 0	; Revisa si está en modo reloj-fecha
-    GOTO LOOP		; Si si debe incrementar el mes
+    GOTO INCREMENTOMES	; Si si debe incrementar el mes
     
     GOTO LOOP		; Si no regresa al loop
    
@@ -640,7 +640,7 @@ CAMBIOMES28:
     CLRF CONTDIA2
     
     BTFSS VRELOJ, 0	; Revisa si está en modo reloj-fecha
-    GOTO LOOP		; Si si debe incrementar el mes
+    GOTO INCREMENTOMES	; Si si debe incrementar el mes
     
     GOTO LOOP		; Si no regresa al loop
 
@@ -660,7 +660,7 @@ CAMBIOMES30:
     CLRF CONTDIA2
     
     BTFSS VRELOJ, 0	; Revisa si está en modo reloj-fecha
-    GOTO LOOP		; Si si debe incrementar el mes
+    GOTO INCREMENTOMES	; Si si debe incrementar el mes
     
     GOTO LOOP		; Si no, regresa al loop
 
@@ -742,6 +742,32 @@ TMES3:
     MOVWF DETMES	; Detmes vale 3 para este tipo de meses
     RETURN
     
+INCREMENTOMES:
+    INCF CONTMES, F
+    MOVF CONTMES, W
+    SUBLW 10
+    BTFSS STATUS, 2
+    GOTO REVMES
+    
+    INCF CONTMES2, F
+    CLRF CONTMES
+    GOTO LOOP
+    
+REVMES:
+    MOVF CONTMES2, W
+    SUBLW 1
+    BTFSS STATUS, 2
+    GOTO LOOP
+    
+    MOVF CONTMES, W
+    SUBLW 3
+    BTFSS STATUS, 2
+    GOTO LOOP
+    
+    CLRF CONTMES
+    CLRF CONTMES2
+    
+    GOTO LOOP
 ; ******************************************************************************
 ; MODO CAMBIO DE MINUTOS/HORA
 ; ******************************************************************************      

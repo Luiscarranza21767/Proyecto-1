@@ -12,7 +12,7 @@
 # in delta units.  Any other numeric values are decimal.
 %PSECTS
 $build/default/production/main.o
-CODE - 0 0 0 2A8 2 1
+CODE - 0 0 0 2BB 2 1
 udata_bank0 BANK0 1 20 20 8 1 1
 udata_shr COMMON 1 70 70 10 1 1
 config CONFIG 4 2007 2007 2 2 1
@@ -30,13 +30,13 @@ BANK0 28-6F 1
 BANK1 A0-EF 1
 BANK2 110-16F 1
 BANK3 190-1EF 1
-CONST 2A8-1FFF 2
-ENTRY 2A8-1FFF 2
+CONST 2BB-1FFF 2
+ENTRY 2BB-1FFF 2
 IDLOC 2000-2003 2
-CODE 2A8-1FFF 2
+CODE 2BB-1FFF 2
 EEDATA 2100-21FF 2
-STRCODE 2A8-1FFF 2
-STRING 2A8-1FFF 2
+STRCODE 2BB-1FFF 2
+STRING 2BB-1FFF 2
 # %LINETAB Section
 # This section enumerates the file/line to address mappings.
 # The beginning of the section is indicated by %LINETAB.
@@ -492,57 +492,76 @@ F CODE ABS >131:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
 272 CODE ABS >741:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
 273 CODE ABS >742:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
 274 CODE ABS >743:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-275 CODE ABS >749:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-276 CODE ABS >750:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-277 CODE ABS >751:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-278 CODE ABS >752:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-279 CODE ABS >753:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-27A CODE ABS >754:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-27B CODE ABS >755:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-27C CODE ABS >756:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-27D CODE ABS >760:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-27E CODE ABS >761:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-27F CODE ABS >762:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-280 CODE ABS >763:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-281 CODE ABS >764:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-282 CODE ABS >765:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-283 CODE ABS >766:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-284 CODE ABS >767:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-285 CODE ABS >768:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-286 CODE ABS >769:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-287 CODE ABS >771:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-288 CODE ABS >772:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-289 CODE ABS >773:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-28A CODE ABS >774:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-28B CODE ABS >775:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-28C CODE ABS >776:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-28D CODE ABS >777:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-28E CODE ABS >778:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-28F CODE ABS >781:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-290 CODE ABS >782:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-291 CODE ABS >783:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-292 CODE ABS >784:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-293 CODE ABS >787:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-294 CODE ABS >788:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-295 CODE ABS >789:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-296 CODE ABS >790:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-297 CODE ABS >791:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-298 CODE ABS >792:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-299 CODE ABS >793:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-29A CODE ABS >794:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-29B CODE ABS >796:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-29C CODE ABS >797:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-29D CODE ABS >798:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-29E CODE ABS >799:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-29F CODE ABS >800:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-2A0 CODE ABS >802:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-2A1 CODE ABS >803:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-2A2 CODE ABS >804:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-2A3 CODE ABS >807:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-2A4 CODE ABS >808:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-2A5 CODE ABS >809:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-2A6 CODE ABS >810:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
-2A7 CODE ABS >811:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+275 CODE ABS >746:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+276 CODE ABS >747:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+277 CODE ABS >748:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+278 CODE ABS >749:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+279 CODE ABS >750:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+27A CODE ABS >752:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+27B CODE ABS >753:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+27C CODE ABS >754:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+27D CODE ABS >757:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+27E CODE ABS >758:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+27F CODE ABS >759:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+280 CODE ABS >760:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+281 CODE ABS >762:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+282 CODE ABS >763:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+283 CODE ABS >764:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+284 CODE ABS >765:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+285 CODE ABS >767:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+286 CODE ABS >768:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+287 CODE ABS >770:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+288 CODE ABS >775:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+289 CODE ABS >776:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+28A CODE ABS >777:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+28B CODE ABS >778:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+28C CODE ABS >779:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+28D CODE ABS >780:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+28E CODE ABS >781:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+28F CODE ABS >782:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+290 CODE ABS >786:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+291 CODE ABS >787:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+292 CODE ABS >788:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+293 CODE ABS >789:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+294 CODE ABS >790:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+295 CODE ABS >791:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+296 CODE ABS >792:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+297 CODE ABS >793:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+298 CODE ABS >794:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+299 CODE ABS >795:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+29A CODE ABS >797:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+29B CODE ABS >798:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+29C CODE ABS >799:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+29D CODE ABS >800:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+29E CODE ABS >801:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+29F CODE ABS >802:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+2A0 CODE ABS >803:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+2A1 CODE ABS >804:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+2A2 CODE ABS >807:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+2A3 CODE ABS >808:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+2A4 CODE ABS >809:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+2A5 CODE ABS >810:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+2A6 CODE ABS >813:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+2A7 CODE ABS >814:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+2A8 CODE ABS >815:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+2A9 CODE ABS >816:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+2AA CODE ABS >817:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+2AB CODE ABS >818:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+2AC CODE ABS >819:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+2AD CODE ABS >820:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+2AE CODE ABS >822:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+2AF CODE ABS >823:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+2B0 CODE ABS >824:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+2B1 CODE ABS >825:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+2B2 CODE ABS >826:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+2B3 CODE ABS >828:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+2B4 CODE ABS >829:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+2B5 CODE ABS >830:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+2B6 CODE ABS >833:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+2B7 CODE ABS >834:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+2B8 CODE ABS >835:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+2B9 CODE ABS >836:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
+2BA CODE ABS >837:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
 # %SYMTAB Section
 # An enumeration of all symbols in the program.
 # The beginning of the section is indicated by %SYMTAB.
@@ -555,7 +574,7 @@ F CODE ABS >131:D:\Backup\Documentos\GitHub\Proyecto-1\Proyecto-1.X\main.s
 # was defined in a psect then <psect> will be "-". File-name
 # is the name of the object file in which the symbol was defined.
 %SYMTAB
-__Hspace_0 2A8 0 ABS 0 - -
+__Hspace_0 2BB 0 ABS 0 - -
 __Hspace_1 80 0 ABS 0 - -
 __Hspace_3 0 0 ABS 0 - -
 __Hspace_4 4010 0 ABS 0 - -
@@ -568,7 +587,7 @@ __Hudata 0 0 ABS 0 udata -
 __Hconfig 4012 0 CONFIG 4 config -
 __Ledata 0 0 ABS 0 edata -
 __Ludata 0 0 ABS 0 udata -
-__HCODE 550 0 ABS 0 CODE -
+__HCODE 576 0 ABS 0 CODE -
 __Hcode 0 0 ABS 0 code -
 __Hdata 0 0 ABS 0 data -
 __LCODE 0 0 ABS 0 CODE -
