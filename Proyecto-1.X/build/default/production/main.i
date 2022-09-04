@@ -2532,6 +2532,14 @@ PSECT udata_shr
     DS 1
  CONTHOR2: ; Contador para el segundo display de horas
     DS 1
+ CONTDIA:
+    DS 1
+ CONTDIA2:
+    DS 1
+ CONTMES:
+    DS 1
+ CONTMES2:
+    DS 1
  ESTADO:
     DS 1
  CAMBIO:
@@ -2582,7 +2590,12 @@ RRBIF:
     MOVF ESTADO, W
     SUBLW 1
     BTFSC STATUS, 2
-    GOTO ESTADO1_ISR ; Estado de cambio de minutos
+    GOTO ESTADO1_ISR ; Estado de fecha
+
+    MOVF ESTADO, W
+    SUBLW 2
+    BTFSC STATUS, 2
+    GOTO ESTADO2_ISR ; Estado de cambio de minutos
 
     GOTO POP
 
@@ -2593,22 +2606,53 @@ ESTADO0_ISR: ; Reloj normal
     BCF INTCON, 0
     GOTO POP
 
-ESTADO1_ISR: ; Cambio de minutos
+ESTADO1_ISR: ; Reloj normal
+    BANKSEL PORTB
+    BTFSS PORTB, 0
+    INCF ESTADO, F
+    BCF INTCON, 0
+    GOTO POP
+
+ESTADO2_ISR: ; Cambio de minutos
     BANKSEL PORTB
     BTFSS PORTB, 0
     CLRF ESTADO ; TEMPORALLLLL
 
     BTFSS PORTB, 1
-    BSF CAMBIO, 0
+    CALL PUSH1_PRESSED
     BTFSS PORTB, 2
-    BSF CAMBIO, 1
+    CALL PUSH2_PRESSED
     BTFSS PORTB, 3
-    BSF CAMBIO, 2
+    CALL PUSH3_PRESSED
     BTFSS PORTB, 4
-    BSF CAMBIO, 3
+    CALL PUSH4_PRESSED
 
     BCF INTCON, 0
     GOTO POP
+
+PUSH1_PRESSED:
+    BTFSS PORTB, 1
+    GOTO $-1
+    BSF CAMBIO, 0
+    RETURN
+
+PUSH2_PRESSED:
+    BTFSS PORTB, 2
+    GOTO $-1
+    BSF CAMBIO, 1
+    RETURN
+
+PUSH3_PRESSED:
+    BTFSS PORTB, 3
+    GOTO $-1
+    BSF CAMBIO, 2
+    RETURN
+
+PUSH4_PRESSED:
+    BTFSS PORTB, 4
+    GOTO $-1
+    BSF CAMBIO, 3
+    RETURN
 
 POP: ; Regresar valores de W y de STATUS
     SWAPF STATUS_TEMP, W
@@ -2688,6 +2732,13 @@ MAIN:
 
     CLRF VRELOJ
 
+    MOVLW 1
+    MOVWF CONTDIA
+    MOVWF CONTMES
+
+    CLRF CONTDIA2
+    CLRF CONTMES2
+
     CLRF CONT10MS ; Se limpian todas las variables antes de iniciar
     CLRF CONTMUX
     CLRF CONTSEG
@@ -2710,6 +2761,11 @@ LOOP:
     MOVF ESTADO, W
     SUBLW 1
     BTFSC STATUS, 2
+    CALL MFECHA ; Estado de cambio de minutos
+
+    MOVF ESTADO, W
+    SUBLW 2
+    BTFSC STATUS, 2
     GOTO CAMBIOMIN ; Estado de cambio de minutos
 
 ; ******************************************************************************
@@ -2717,7 +2773,7 @@ LOOP:
 ; ******************************************************************************
 VERIRELOJ:
     MOVF ESTADO, W
-    SUBLW 1
+    SUBLW 2
     BTFSC STATUS, 2
     CALL MRELOJ ; Estado de cambio de minutos
 
@@ -2726,9 +2782,7 @@ VERIRELOJ:
     BTFSC STATUS, 2 ; Revisa si el resultado es 0
     CALL MULTIPLEX ; Llama para la multiplexación cada 50ms
 
-    MOVF ESTADO, W
-    SUBLW 0
-    BTFSC STATUS, 2
+    BTFSS VRELOJ, 0
     GOTO RELOJ
 
     GOTO LOOP
@@ -2771,9 +2825,7 @@ INCREMENTOMIN:
     CLRF CONTMIN ; Limpia el resto de variables del reloj
     CLRF CONTMIN2
 
-    MOVF ESTADO, W
-    SUBLW 0
-    BTFSC STATUS, 2
+    BTFSS VRELOJ, 0
     GOTO INCREMENTOHOR
 
     GOTO LOOP
@@ -2806,10 +2858,9 @@ REVCAMBIOHOR:
     CLRF CONTHOR
     CLRF CONTHOR2
 
-    MOVF ESTADO, W
-    SUBLW 0
-    BTFSS STATUS, 2
+    BTFSS VRELOJ, 0
     GOTO LOOP
+    ;GOTO INCREMENTODIA
 
 
     GOTO LOOP
@@ -2949,11 +3000,44 @@ MRELOJ:
 
     RETURN
 
+; ******************************************************************************
+; MODO FECHA
+; ******************************************************************************
+MFECHA:
+    MOVF CONTDIA, W
+    MOVWF VDISP3
+
+    MOVF CONTDIA2, W
+    MOVWF VDISP4
+
+    MOVF CONTMES, W
+    MOVWF VDISP5
+
+    MOVF CONTMES2, W
+    MOVWF VDISP6
+
+    RETURN
+
+; INCREMENTODIA:
+; INCF CONTDIA, F
+; MOVF CONTDIA, W
+; SUBLW 10
+; BTFSS STATUS, 2
+; GOTO REVCAMBIODIA
+;
+; INCF CONTDIA2
+; CLRF CONTDIA
+; GOTO LOOP
+;
+; REVCAMBIODIA:
+;
+
 
 ; ******************************************************************************
 ; MODO CAMBIO DE MINUTOS/HORA
 ; ******************************************************************************
 CAMBIOMIN:
+    BCF VRELOJ, 0
     CLRF CONTSEG
     CLRF CONTSEG2
     BTFSS CAMBIO, 0
