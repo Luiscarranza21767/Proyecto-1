@@ -1001,13 +1001,13 @@ DECMES:
 
 DECMES2:
     MOVF CONTMES, W
-    SUBLW -1
+    SUBLW -1		; Revisa si unidades de mes es -1
     BTFSS STATUS, 2
-    GOTO VERIRELOJ
+    GOTO VERIRELOJ	; Si no lo es solo regresa al loop
     
-    DECF CONTMES2, F	; Si es -1 entonces decrementa las decenas de horas
+    DECF CONTMES2, F	; Si lo es es porque debe decrementar las decenas
     
-    MOVLW 9		; Si no es -1 solo carga el valor de 9 a las unidades
+    MOVLW 9		; Y pasar las unidades a 9
     MOVWF CONTMES
     GOTO VERIRELOJ	; Regresa al loop del reloj
 
