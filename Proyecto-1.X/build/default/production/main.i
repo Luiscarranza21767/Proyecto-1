@@ -3461,52 +3461,51 @@ DECMES2:
     MOVWF CONTMES
     GOTO VERIRELOJ ; Regresa al loop del reloj
 
-REVISIONDIASMES:
+REVISIONDIASMES: ; Revisa que no existan valores prohibidos
     CALL DETERMINARMES
 
     MOVF DETMES, W ; Si DETMES es 2 entonces tiene 28 días
     SUBLW 2
     BTFSC STATUS, 2
-    GOTO COMPROBAR28 ; Regresa a 28
+    GOTO COMPROBAR28 ; Revisará que el contador de días no esté en 30 o 31
 
     MOVF DETMES, W ; Si DETMES es 3 entonces tiene 30 días
     SUBLW 3
     BTFSC STATUS, 2
-    GOTO COMPROBAR30 ; Regresa a 30
+    GOTO COMPROBAR30 ; Revisará que el contador de días no esté en 31
 
     RETURN
 
 COMPROBAR28:
-    MOVF CONTDIA2, W
+    MOVF CONTDIA2, W ; Revisa si hay un 3 en las decenas de días
     SUBLW 3
     BTFSS STATUS, 2
-    RETURN
+    RETURN ; Si no lo hay regresa de la subrutina
 
-    MOVLW 2
+    MOVLW 2 ; Si lo hay carga un dos en las decenas de días
     MOVWF CONTDIA2
-    MOVLW 8
+    MOVLW 8 ; y carga un 8 en las unidades
     MOVWF CONTDIA
     RETURN
 
 COMPROBAR30:
-    MOVF CONTDIA2, W
+    MOVF CONTDIA2, W ; Revisa si hay un 3 en las decenas de días
     SUBLW 3
     BTFSS STATUS, 2
-    RETURN
+    RETURN ; Si no, regresa de la subrutina
 
-    MOVF CONTDIA, W
+    MOVF CONTDIA, W ; Si si revisa si hay un 1 en las unidades
     SUBLW 1
     BTFSS STATUS, 2
-    RETURN
+    RETURN ; Si no lo hay regresa de la subrutina
 
-    MOVLW 3
+    MOVLW 3 ; Si lo hay carga el 3 a las decenas de días
     MOVWF CONTDIA2
-    MOVLW 0
+    MOVLW 0 ; y carga 0 en las unidades
     MOVWF CONTDIA
     RETURN
 
 ;*******************************************************************************
 ; FIN DEL CÓDIGO
 ;*******************************************************************************
-
 END
