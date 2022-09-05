@@ -9,7 +9,7 @@
 ; Proyecto: Proyecto de laboratorio 1
 ; Hardware PIC16F887
 ; Creado: 23/08/22
-; Última Modificación: 03/09/22
+; Última Modificación: 04/09/22
 ; ******************************************************************************
 
 PROCESSOR 16F887
@@ -2813,10 +2813,10 @@ LOOP:
 ; MODO RELOJ
 ; ******************************************************************************
 VERIRELOJ:
-    MOVF ESTADO, W ; Revisa de nuevo el valor de ESTADO
-    SUBLW 0 ; Si está en el modo cambio minutos
+    MOVF ESTADO, W ; Revisa el valor de ESTADO
+    SUBLW 0 ; Revisa si está en modo reloj-fecha
     BTFSC STATUS, 2
-    BCF VRELOJ, 0 ; Carga las variables de seg, min y hor al display
+    BCF VRELOJ, 0 ; Enciende bit que indica que está en modo reloj-fecha
 
     MOVF ESTADO, W ; Revisa de nuevo el valor de ESTADO
     SUBLW 2 ; Si está en el modo cambio minutos
@@ -2826,10 +2826,10 @@ VERIRELOJ:
     MOVF ESTADO, W ; Revisa de nuevo el valor de ESTADO
     SUBLW 3 ; Si está en el modo cambio minutos
     BTFSC STATUS, 2
-    CALL MFECHA ; Carga las variables de seg, min y hor al display
+    CALL MFECHA ; Carga las variables de día y mes a los displays
 
     MOVF CONTMUX, W ; Carga el valor de la variable a W
-    SUBLW 1 ; Resta el valor a 1
+    SUBLW 14 ; Resta el valor a 1
     BTFSC STATUS, 2 ; Revisa si el resultado es 0
     CALL MULTIPLEX ; Llama para la multiplexación cada 5ms
 
@@ -3056,16 +3056,16 @@ MRELOJ:
 ; ******************************************************************************
 MFECHA:
     MOVF CONTDIA, W ; Carga el contador de días a display 3
-    MOVWF VDISP3
-
-    MOVF CONTDIA2, W ; Carga el contador de decenas de días a display 4
-    MOVWF VDISP4
-
-    MOVF CONTMES, W ; Carga el contador de meses a display 5
     MOVWF VDISP5
 
-    MOVF CONTMES2, W ; Carga el contador de decenas de meses a display 6
+    MOVF CONTDIA2, W ; Carga el contador de decenas de días a display 4
     MOVWF VDISP6
+
+    MOVF CONTMES, W ; Carga el contador de meses a display 5
+    MOVWF VDISP3
+
+    MOVF CONTMES2, W ; Carga el contador de decenas de meses a display 6
+    MOVWF VDISP4
 
     RETURN
 
@@ -3340,113 +3340,114 @@ RESETHOR:
 ; ******************************************************************************
 CAMBIODIA:
     BSF VRELOJ, 0 ; Indica que ya no está en modo contador de reloj-fecha
-    BTFSS CAMBIO, 0 ; Revisa si se presionó el cambio de unidades de min
-    GOTO DECDIA ; Si no revisa si se presionó el de decenas de min
+    CALL REVISIONDIASMES
+    BTFSS CAMBIO, 0 ; Revisa si se presionó el cambio de unidades de día
+    GOTO DECDIA ; Si no revisa si se presionó el de decenas de día
     BCF CAMBIO, 0 ; Si si limpia la bandera del botón
-    GOTO INCREMENTODIA ; Procede a revisar cómo debe hacer el incremento
-   ; Con ayuda de la subrutina del reloj
+    GOTO INCREMENTODIA ; Procede a realizar el incremento
 
 DECDIA:
     BTFSS CAMBIO, 1 ; Revisa si se presionó el cambio de decenas de min
     GOTO CAMBIOMES ; Si no se presionó revisa el cambio de horas
     BCF CAMBIO, 1 ; Si se presionó limpia la bandera del botón
 
-    DECF CONTDIA, F ; Decrementa el contador de minutos
+    DECF CONTDIA, F ; Decrementa el contador de días
     MOVF CONTDIA, W
-    SUBLW 0 ; Revisa si el valor actual es 0 restándole -1
-    BTFSS STATUS, 2 ; Si la resta es cero es porque CONTMIN ya era -1
-    GOTO DECDIA2 ; Si no es cero regresa al loop del reloj para multiplex
+    SUBLW 0 ; Revisa si el valor luego del decremento es 0
+    BTFSS STATUS, 2 ;
+    GOTO DECDIA2 ; Si no es cero regresa revisa si el valor luego del
+   ; decremento es -1
 
-    MOVF CONTDIA2, W
+    MOVF CONTDIA2, W ; Si es 0 revisa si las unidades del día es 0
     SUBLW 0
     BTFSC STATUS, 2
-    GOTO REVDECMES
+    GOTO REVDECMES ; Si es 0 revisa qué mes es para reiniciar a 31, 30 o 28
 
-    CLRF CONTDIA
-    GOTO VERIRELOJ
+    CLRF CONTDIA ; Si no es 0 limpia el contador de unidades
+    GOTO VERIRELOJ ; Regresa al loop del reloj
 
 DECDIA2:
-    MOVF CONTDIA, W
+    MOVF CONTDIA, W ; Revisa si CONTDIA luego del decremento es -1
     SUBLW -1
     BTFSS STATUS, 2
-    GOTO VERIRELOJ
-    MOVLW 9
+    GOTO VERIRELOJ ; Si no lo es regresa al loop de reloj
+    MOVLW 9 ; Si es 0 entonces carga 9 a las unidades
     MOVWF CONTDIA
-    DECF CONTDIA2, F
-    GOTO VERIRELOJ
+    DECF CONTDIA2, F ; Decrementa las decenas
+    GOTO VERIRELOJ ; Regresa al loop de reloj
 
 REVDECMES:
-    CALL DETERMINARMES
+    CALL DETERMINARMES ; Revisa en qué tipo de mes se encuentra
 
     MOVF DETMES, W ; Si DETMES es 1 entonces tiene 31 días
     SUBLW 1
     BTFSC STATUS, 2
-    GOTO DECDIA31 ; Revisa si está en 31
+    GOTO DECDIA31 ; Regresa a 31
 
     MOVF DETMES, W ; Si DETMES es 2 entonces tiene 28 días
     SUBLW 2
     BTFSC STATUS, 2
-    GOTO DECDIA28 ; Revisa si está en 28
+    GOTO DECDIA28 ; Regresa a 28
 
     MOVF DETMES, W ; Si DETMES es 3 entonces tiene 30 días
     SUBLW 3
     BTFSC STATUS, 2
-    GOTO DECDIA30 ; Revisa si está en 30
+    GOTO DECDIA30 ; Regresa a 30
 
 DECDIA31:
-    MOVLW 1 ; Si es cero entonces reinicia a 9 unidades de minutos
+    MOVLW 1 ; Carga el 1 a las unidades
     MOVWF CONTDIA
 
-    MOVLW 3
+    MOVLW 3 ; Carga el 3 a las decenas
     MOVWF CONTDIA2
 
     GOTO VERIRELOJ
 
 DECDIA28:
-    MOVLW 8 ; Si es cero entonces reinicia a 9 unidades de minutos
+    MOVLW 8 ; Carga el 8 a las unidades
     MOVWF CONTDIA
 
-    MOVLW 2
+    MOVLW 2 ; Carga el 2 a las decenas
     MOVWF CONTDIA2
 
     GOTO VERIRELOJ
 
 DECDIA30:
-    MOVLW 0 ; Si es cero entonces reinicia a 9 unidades de minutos
+    MOVLW 0 ; Carga el 0 a las unidades
     MOVWF CONTDIA
 
-    MOVLW 3
+    MOVLW 3 ; Carga el 3 a las decenas
     MOVWF CONTDIA2
 
-    GOTO VERIRELOJ
+    GOTO VERIRELOJ ; Regresa al loop del reloj
 
 CAMBIOMES:
-    BTFSS CAMBIO, 2 ; Revisa si se presionó para incrementar la hora
-    GOTO DECMES ; Si no revisa si se presionó para decrementarla
+    BTFSS CAMBIO, 2 ; Revisa si se presionó para incrementar el mes
+    GOTO DECMES ; Si no revisa si se presionó para decrementarlo
     BCF CAMBIO, 2 ; Si si limpia la bandera del botón
-    GOTO INCREMENTOMES ; Llama a la subrutina del reloj que incrementa la hora
+    GOTO INCREMENTOMES ; Llama a la etiqueta que incrementa el mes
 
 DECMES:
-    BTFSS CAMBIO, 3 ; Revisa si se presionó el botón de decremento hora
+    BTFSS CAMBIO, 3 ; Revisa si se presionó el botón de decremento mes
     GOTO VERIRELOJ ; Si no regresa al loop de reloj para multiplexar
     BCF CAMBIO, 3 ; Si si limpia la bandera del botón
 
-    DECF CONTMES, F ; Decrementa unidades de hora
+    DECF CONTMES, F ; Decrementa unidades del mes
     MOVF CONTMES, W
-    SUBLW 0 ; Revisa si ya es -1
+    SUBLW 0 ; Revisa luego del decremento es 0
     BTFSS STATUS, 2
-    GOTO DECMES2 ; Si aún no lo es regresa al loop del reloj
+    GOTO DECMES2 ; Si no es 0 revisa si es -1
 
-    MOVF CONTMES2, W
+    MOVF CONTMES2, W ; Si es 0 revisa las decenas del mes
     SUBLW 0
-    BTFSS STATUS, 2
+    BTFSS STATUS, 2 ; Si en las decenas no hay un cero regresa al loop
     GOTO VERIRELOJ
 
-    MOVLW 2
+    MOVLW 2 ; Si hay un 0 debe cargar el 2 a las unidades
     MOVWF CONTMES
-    MOVLW 1
+    MOVLW 1 ; Y carga un 1 a las decenas de mes
     MOVWF CONTMES2
-    GOTO VERIRELOJ
+    GOTO VERIRELOJ ; Regresa al loop del reloj
 
 DECMES2:
     MOVF CONTMES, W
@@ -3459,6 +3460,50 @@ DECMES2:
     MOVLW 9 ; Y pasar las unidades a 9
     MOVWF CONTMES
     GOTO VERIRELOJ ; Regresa al loop del reloj
+
+REVISIONDIASMES:
+    CALL DETERMINARMES
+
+    MOVF DETMES, W ; Si DETMES es 2 entonces tiene 28 días
+    SUBLW 2
+    BTFSC STATUS, 2
+    GOTO COMPROBAR28 ; Regresa a 28
+
+    MOVF DETMES, W ; Si DETMES es 3 entonces tiene 30 días
+    SUBLW 3
+    BTFSC STATUS, 2
+    GOTO COMPROBAR30 ; Regresa a 30
+
+    RETURN
+
+COMPROBAR28:
+    MOVF CONTDIA2, W
+    SUBLW 3
+    BTFSS STATUS, 2
+    RETURN
+
+    MOVLW 2
+    MOVWF CONTDIA2
+    MOVLW 8
+    MOVWF CONTDIA
+    RETURN
+
+COMPROBAR30:
+    MOVF CONTDIA2, W
+    SUBLW 3
+    BTFSS STATUS, 2
+    RETURN
+
+    MOVF CONTDIA, W
+    SUBLW 1
+    BTFSS STATUS, 2
+    RETURN
+
+    MOVLW 3
+    MOVWF CONTDIA2
+    MOVLW 0
+    MOVWF CONTDIA
+    RETURN
 
 ;*******************************************************************************
 ; FIN DEL CÓDIGO
