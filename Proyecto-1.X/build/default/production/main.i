@@ -2512,7 +2512,7 @@ PSECT udata_bank0
     DS 1
  DETMES: ; Variable auxiliar para saber si el mes tiene 31, 28 o 30 días
     DS 1
- CONT5MSLED:
+ CONT5MSLED: ; Variable para saber cuándo llega a 500 ms para encender led
     DS 1
 
 PSECT udata_shr
@@ -2583,7 +2583,7 @@ RTMR0:
     MOVLW 217 ; Carga el valor de n al TMR0
     MOVWF TMR0
     INCF CONTMUX ; Incrementa variable para el multiplexor
-    INCF CONT5MSLED
+    INCF CONT5MSLED ; Incrementa variable para los led de 500ms
     GOTO POP
 
 RRBIF:
@@ -2658,7 +2658,7 @@ ESTADO3_ISR: ; Cambio de minutos
     GOTO POP
 
 PUSH0_PRESSED: ; Subrutina de antirrebotes
-    BTFSS PORTB, 1 ; Revisa si sigue presionado el botón
+    BTFSS PORTB, 0 ; Revisa si sigue presionado el botón
     GOTO $-1 ; Si sigue presionado revisa de nuevo
     INCF ESTADO, F
     MOVF ESTADO, W
@@ -2839,7 +2839,10 @@ VERIRELOJ:
     CALL MULTIPLEX ; Llama para la multiplexación cada 5ms
 
     BTFSS VRELOJ, 0
-    CALL ENCENDERLEDS
+    CALL ENCENDERLEDS ; Revisa si está en modo reloj para encender leds
+
+    BTFSS VRELOJ, 0
+    CLRF PORTC ; Revisa si está en modo reloj para encender leds
 
     BTFSS VRELOJ, 0 ; Revisa si está en el modo reloj
     GOTO RELOJ ; Si sí, continua con el contador de s, min, h, d, m
@@ -3310,6 +3313,9 @@ CAMBIOMIN:
     BSF VRELOJ, 0 ; Indica que ya no está en modo contador de reloj-fecha
     CLRF CONTSEG ; Limpia variable de segundos para ajustar la hora
     CLRF CONTSEG2
+    BCF PORTE, 2 ; Apaga leds titilantes
+    MOVLW 10000000B
+    MOVWF PORTC
     BTFSS CAMBIO, 0 ; Revisa si se presionó el cambio de unidades de min
     GOTO DECMIN ; Si no revisa si se presionó el de decenas de min
     BCF CAMBIO, 0 ; Si si limpia la bandera del botón
@@ -3377,6 +3383,9 @@ RESETHOR:
 CAMBIODIA:
     BSF VRELOJ, 0 ; Indica que ya no está en modo contador de reloj-fecha
     CALL REVISIONDIASMES
+    BCF PORTE, 2 ; Apaga leds titilantes
+    MOVLW 01000000B
+    MOVWF PORTC
     BTFSS CAMBIO, 0 ; Revisa si se presionó el cambio de unidades de día
     GOTO DECDIA ; Si no revisa si se presionó el de decenas de día
     BCF CAMBIO, 0 ; Si si limpia la bandera del botón
