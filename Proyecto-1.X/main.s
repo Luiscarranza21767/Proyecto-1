@@ -63,13 +63,15 @@ PSECT udata_bank0
     DS 1
  DETMES:	; Variable auxiliar para saber si el mes tiene 31, 28 o 30 días
     DS 1
+ CONT5MSLED:
+    DS 1
     
 PSECT udata_shr
  W_TEMP:	; Variable para almacenar W durante interrupciones
     DS 1
  STATUS_TEMP:	; Variable para almacenar STATUS durante interrupciones
     DS 1
- CONT10MS:	; Contador de 10 ms
+ CONT5MS:	; Contador de 10 ms
     DS 1
  CONTMUX:	; Contador para la multiplexación cada 50 ms
     DS 1
@@ -128,10 +130,11 @@ ISR:			; Vector principal de interrupciones
 RTMR0:
     BCF INTCON, 2	; Limpia la bandera de interrupción
     BANKSEL TMR0	
-    INCF CONT10MS	; Incrementa la variable de 10 ms
+    INCF CONT5MS	; Incrementa la variable de 10 ms
     MOVLW 217		; Carga el valor de n al TMR0
     MOVWF TMR0	
     INCF CONTMUX	; Incrementa variable para el multiplexor
+    INCF CONT5MSLED
     GOTO POP
     
 RRBIF:		
@@ -271,7 +274,8 @@ MAIN:
     MOVWF TRISB		
     CLRF TRISA
     CLRF TRISC
-    CLRF TRISD	    ; El resto de puertos configurados como salidas
+    CLRF TRISD	    
+    CLRF TRISE	    ; El resto de puertos configurados como salidas
     
     BANKSEL OPTION_REG
     BCF OPTION_REG, 5	; T0CS FOSC/4 modo temporizador
@@ -326,8 +330,9 @@ MAIN:
     CLRF CONTDIA2   ; Limpia variables que inician en 0
     CLRF CONTMES2
     
-    CLRF CONT10MS   
+    CLRF CONT5MS   
     CLRF CONTMUX
+    CLRF CONT5MSLED
     CLRF CONTSEG
     CLRF CONTSEG2
     CLRF CONTMIN
@@ -380,9 +385,12 @@ VERIRELOJ:
     CALL MFECHA		; Carga las variables de día y mes a los displays
     
     MOVF CONTMUX, W	; Carga el valor de la variable a W
-    SUBLW 14		; Resta el valor a 1
+    SUBLW 1		; Resta el valor a 1
     BTFSC STATUS, 2	; Revisa si el resultado es 0
     CALL MULTIPLEX	; Llama para la multiplexación cada 5ms
+    
+    BTFSS VRELOJ, 0
+    CALL ENCENDERLEDS
     
     BTFSS VRELOJ, 0	; Revisa si está en el modo reloj
     GOTO RELOJ		; Si sí, continua con el contador de s, min, h, d, m
@@ -394,11 +402,11 @@ VERIRELOJ:
 ; CONTADOR DE RELOJ
 ; ******************************************************************************     
 RELOJ:    
-    MOVF CONT10MS, W	; Carga el valor de la variable a W
+    MOVF CONT5MS, W	; Carga el valor de la variable a W
     SUBLW 200		; Resta el valor a 200
     BTFSS STATUS, 2	; Revisa si el resultado es 0
     GOTO VERIRELOJ	; Si no es 0 regresa a verificación del reloj
-    CLRF CONT10MS	; Si es 0 limpia la variable (Ya pasó 1 segundo)
+    CLRF CONT5MS	; Si es 0 limpia la variable (Ya pasó 1 segundo)
      
     INCF CONTSEG, F	; Incrementa la variable de segundos
     MOVF CONTSEG, W
@@ -579,6 +587,30 @@ Table:
     RETLW 01101111B ; Regresa 9    
 
 ; ******************************************************************************
+; SUBRUTINA PARA ENCENDER LEDS
+; ****************************************************************************** 
+ENCENDERLEDS:
+    MOVF CONT5MSLED, W	; Carga el valor de la variable a W
+    SUBLW 100		; Resta el valor a 100
+    BTFSS STATUS, 2	; Revisa si el resultado es 0
+    RETURN	    	; Si no es 0 regresa de la subrutina
+    
+    CLRF CONT5MSLED
+    MOVF ESTADO, W	; Revisa el valor de ESTADO
+    SUBLW 1		; Lo resta a 1
+    BTFSC STATUS, 2	; Si es 0 está en modo mostrar fecha
+    GOTO LED_ON		; Estado de cambio de minutos
+    
+    BTFSS PORTE, 2	; Revisa el estado del bit 2 del puerto E
+    GOTO LED_ON
+    BCF PORTE, 2	; si no está en 1 lo enciende
+    RETURN		; Regresa de la subrutina
+    
+LED_ON:
+    BSF PORTE, 2	; Si está en 1 limpia el puerto
+    RETURN 
+    
+; ******************************************************************************
 ; MODO CAMBIO RELOJ
 ; ****************************************************************************** 
 MRELOJ:		    
@@ -617,6 +649,10 @@ MFECHA:
     
     MOVF CONTMES2, W	; Carga el contador de decenas de meses a display 6
     MOVWF VDISP4
+    
+    MOVLW 2
+    MOVWF VDISP1
+    MOVWF VDISP2
     
     RETURN
 
