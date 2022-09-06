@@ -81,8 +81,6 @@ PSECT udata_bank0
     DS 1
  MIN2_TEMP:
     DS 1
- ALARMAOFF:
-    DS 2
     
 PSECT udata_shr
  W_TEMP:	; Variable para almacenar W durante interrupciones
@@ -153,7 +151,6 @@ RTMR0:
     MOVWF TMR0	
     INCF CONTMUX	; Incrementa variable para el multiplexor
     INCF CONT5MSLED	; Incrementa variable para los led de 500ms
-    INCF ALARMAOFF
     GOTO POP
     
 RRBIF:		
@@ -359,6 +356,8 @@ MAIN:
     CLRF MIN1_TEMP
     CLRF MIN2_TEMP
     
+    BSF PORTC, 4
+    
 ; ******************************************************************************
 ; LOOP PRINCIPAL
 ; ******************************************************************************   
@@ -429,8 +428,12 @@ VERIRELOJ:
     BTFSC STATUS, 2	; Revisa si el resultado es 0
     CALL MULTIPLEX	; Llama para la multiplexación cada 5ms
     
+    PAGESEL REVISIONALARMA
     CALL REVISIONALARMA
+    PAGESEL VERIRELOJ
+    PAGESEL APAGARALARMA
     CALL APAGARALARMA
+    PAGESEL VERIRELOJ
     
     BTFSS VRELOJ, 0
     CALL ENCENDERLEDS	; Revisa si está en modo reloj para encender leds
@@ -925,7 +928,7 @@ CAMBIOMIN:
     GOTO CAMBIOMIN1	; Si no, está en modo set alarma y no enciende ese led
     
 LEDINDICADOR:
-    MOVLW 10000000B	; Pone el bit 7 del puerto c en HIGH
+    MOVLW 10010000B	; Pone el bit 7 del puerto c en HIGH
     MOVWF PORTC
     
 CAMBIOMIN1:
@@ -997,7 +1000,7 @@ CAMBIODIA:
     BSF VRELOJ, 0	; Indica que ya no está en modo contador de reloj-fecha
     CALL REVISIONDIASMES
     BCF PORTE, 2	; Apaga leds titilantes
-    MOVLW 01000000B
+    MOVLW 01010000B
     MOVWF PORTC
     BTFSS CAMBIO, 2	; Revisa si se presionó el cambio de unidades de día
     GOTO DECDIA		; Si no revisa si se presionó el de decenas de día
@@ -1168,7 +1171,7 @@ COMPROBAR30:
 ; ******************************************************************************  
 SET_ALARMA:
     BCF PORTE, 2	; Apaga leds titilantes
-    MOVLW 00100000B	; Enciende el bit 5 del puerto C
+    MOVLW 00110000B	; Enciende el bit 5 del puerto C
     MOVWF PORTC
     INCF ESTADO, F	; Incrementa el estado para avisar que guardó las 
 			; variables del reloj
@@ -1187,16 +1190,16 @@ SET_ALARMA:
     GOTO CAMBIOMIN	; Inicia los ajustes de la alarma
     
 ALARMASETED:
-    MOVF VDISP5, W	; Guarda el valor elegido para la alarma de unidad hora
+    MOVF CONTHOR, W	; Guarda el valor elegido para la alarma de unidad hora
     MOVWF VALARMA_H1	
     
-    MOVF VDISP6, W	; Guarda el valor de decenas de hora para la alarma
+    MOVF CONTHOR2, W	; Guarda el valor de decenas de hora para la alarma
     MOVWF VALARMA_H2
     
-    MOVF VDISP3, W	; Guarda el valor de unidades de minuto para la alarma
+    MOVF CONTMIN, W	; Guarda el valor de unidades de minuto para la alarma
     MOVWF VALARMA_M1
     
-    MOVF VDISP4, W	; Guarda el valor de decenas de minuto para la alarma
+    MOVF CONTMIN2, W	; Guarda el valor de decenas de minuto para la alarma
     MOVWF VALARMA_M2
     
     
@@ -1212,48 +1215,49 @@ ALARMASETED:
     MOVF MIN2_TEMP, W	; Regresa los minutos del reloj de la variable temporal
     MOVWF CONTMIN2
     
-    CLRF ESTADO		; Limpia la variable estado para regresar al reloj
     BSF VRELOJ, 1	; Indica que la alarma se configuró
+    CLRF ESTADO		; Limpia la variable estado para regresar al reloj
+   
     GOTO LOOP
     
 REVISIONALARMA:
     BTFSS VRELOJ, 1
     RETURN
     
-    MOVF VDISP6, W
-    SUBWF VALARMA_H2
+    MOVF VALARMA_H2, W
+    SUBWF VDISP6, 0
     BTFSS STATUS, 2
     RETURN
     
-    MOVF VDISP5, W
-    SUBWF VALARMA_H1
+    MOVF VALARMA_H1, W
+    SUBWF VDISP5, 0
     BTFSS STATUS, 2
     RETURN
     
-    MOVF VDISP4, W
-    SUBWF VALARMA_M2
+    MOVF VALARMA_M2, W
+    SUBWF VDISP4, 0
     BTFSS STATUS, 2
     RETURN
     
-    MOVF VDISP3, W
-    SUBWF VALARMA_M1
+    MOVF VALARMA_M1, W
+    SUBWF VDISP3, 0
     BTFSS STATUS, 2
     RETURN
     
-    BSF PORTC, 4
+    BCF PORTC, 4
     BCF VRELOJ, 1
     RETURN
     
 APAGARALARMA:
-    BTFSS PORTC, 4
+    BTFSC PORTC, 4
     RETURN
-    MOVF ALARMAOFF, W	; Carga el valor de la variable a W
-    SUBLW 200		; Resta el valor a 100
-    BTFSS STATUS, 2	; Revisa si el resultado es 0
-    RETURN	    	; Si no es 0 regresa de la subrutina
     
-    CLRF ALARMAOFF
-    BCF PORTC, 4
+    MOVF CONTSEG2, W
+    SUBLW 1
+    BTFSS STATUS, 2
+    RETURN
+    
+    BSF PORTC, 4
     RETURN
 ;*******************************************************************************
 ; FIN DEL CÓDIGO
