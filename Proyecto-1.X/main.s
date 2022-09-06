@@ -65,6 +65,24 @@ PSECT udata_bank0
     DS 1
  CONT5MSLED:	; Variable para saber cuándo llega a 500 ms para encender led
     DS 1
+ VALARMA_H1:
+    DS 1
+ VALARMA_H2:
+    DS 1
+ VALARMA_M1:
+    DS 1
+ VALARMA_M2:
+    DS 1
+ HORA1_TEMP:
+    DS 1
+ HORA2_TEMP:
+    DS 1
+ MIN1_TEMP:
+    DS 1
+ MIN2_TEMP:
+    DS 1
+ ALARMAOFF:
+    DS 2
     
 PSECT udata_shr
  W_TEMP:	; Variable para almacenar W durante interrupciones
@@ -135,6 +153,7 @@ RTMR0:
     MOVWF TMR0	
     INCF CONTMUX	; Incrementa variable para el multiplexor
     INCF CONT5MSLED	; Incrementa variable para los led de 500ms
+    INCF ALARMAOFF
     GOTO POP
     
 RRBIF:		
@@ -156,7 +175,17 @@ RRBIF:
     MOVF ESTADO, W
     SUBLW 3
     BTFSC STATUS, 2
-    GOTO ESTADO3_ISR	; Estado de cambio de hora/minutos
+    GOTO ESTADO2_ISR	; Estado de cambio de fecha
+    
+    MOVF ESTADO, W
+    SUBLW 4
+    BTFSC STATUS, 2
+    GOTO ESTADO2_ISR	; Estado de set de alarma
+    
+    MOVF ESTADO, W
+    SUBLW 5
+    BTFSC STATUS, 2
+    GOTO ESTADO2_ISR	; Estado de set de alarma
     
     GOTO POP
    
@@ -174,24 +203,8 @@ ESTADO1_ISR:		; Reloj normal
     BCF INTCON, 0	; Apaga bandera de interrupción de puerto b
     GOTO POP
 
-ESTADO2_ISR:		; Cambio de minutos
-    BANKSEL PORTB
-    BTFSS PORTB, 0	; Revisa si se presiona el cambio de modo
-    CALL PUSH0_PRESSED	;
-    
-    BTFSS PORTB, 1	; Revisa si se presiona el botón de incremento min
-    CALL PUSH1_PRESSED	; Si si llama función para antirrebotes
-    BTFSS PORTB, 2	; Revisa si se presionó el botón de decremento min
-    CALL PUSH2_PRESSED	
-    BTFSS PORTB, 3	; Revisa si se presionó el botón de incremento hor
-    CALL PUSH3_PRESSED
-    BTFSS PORTB, 4	; Revisa si se presionó el botón de decremento hor
-    CALL PUSH4_PRESSED
-    
-    BCF INTCON, 0	; Apaga bandera de interrupción del puerto
-    GOTO POP
-
-ESTADO3_ISR:		; Cambio de minutos
+ESTADO2_ISR:		; Cambio de minutos (también funciona para el cambio de
+			; fecha y el set de la alarma)
     BANKSEL PORTB
     BTFSS PORTB, 0	; Revisa si se presiona el cambio de modo
     CALL PUSH0_PRESSED	;
@@ -213,9 +226,6 @@ PUSH0_PRESSED:		; Subrutina de antirrebotes
     GOTO $-1		; Si sigue presionado revisa de nuevo
     INCF ESTADO, F
     MOVF ESTADO, W
-    SUBLW 4
-    BTFSC STATUS, 2
-    CLRF ESTADO
     
     RETURN		; Regresa de la subrutina
     
@@ -340,11 +350,20 @@ MAIN:
     CLRF CONTHOR
     CLRF CONTHOR2
     
+    CLRF VALARMA_H1
+    CLRF VALARMA_H2
+    CLRF VALARMA_M1
+    CLRF VALARMA_M2
+    CLRF HORA1_TEMP
+    CLRF HORA2_TEMP
+    CLRF MIN1_TEMP
+    CLRF MIN2_TEMP
+    
 ; ******************************************************************************
 ; LOOP PRINCIPAL
 ; ******************************************************************************   
     
-LOOP:
+LOOP:    
     MOVF ESTADO, W	; Revisa el valor de ESTADO
     SUBLW 0		; Lo resta a 0
     BTFSC STATUS, 2	; Si es 0 está en modo reloj
@@ -361,14 +380,30 @@ LOOP:
     GOTO CAMBIOMIN	; Estado de cambio de minutos
     
     MOVF ESTADO, W	; Revisa el valor de ESTADO
-    SUBLW 3		; Lo resta a 2
-    BTFSC STATUS, 2	; Si es 0 está en modo cambio de hora/min
+    SUBLW 3		; Lo resta a 3
+    BTFSC STATUS, 2	; Si es 0 está en modo cambio de fecha
     GOTO CAMBIODIA	; Estado de cambio de minutos
+    
+    MOVF ESTADO, W	; Revisa el valor de ESTADO
+    SUBLW 4		; Lo resta a 4
+    BTFSC STATUS, 2	; Si es 0 está en modo cambio de set alarma
+    GOTO SET_ALARMA	; Estado de cambio de minutos
+    
+    MOVF ESTADO, W	; Revisa el valor de ESTADO
+    SUBLW 5		; Lo resta a 4
+    BTFSC STATUS, 2	; Si es 0 está en modo cambio de set alarma
+    GOTO CAMBIOMIN	; Estado de cambio de minutos
+    
+    MOVF ESTADO, W	; Revisa el valor de ESTADO
+    SUBLW 6		; Lo resta a 6
+    BTFSC STATUS, 2	; Si es 0 está en modo alarma seted
+    GOTO ALARMASETED	; Estado de cambio de minutos
 
 ; ******************************************************************************
 ; MODO RELOJ
 ; ******************************************************************************      
 VERIRELOJ:
+    
     MOVF ESTADO, W	; Revisa el valor de ESTADO
     SUBLW 0		; Revisa si está en modo reloj-fecha
     BTFSC STATUS, 2
@@ -384,16 +419,24 @@ VERIRELOJ:
     BTFSC STATUS, 2
     CALL MFECHA		; Carga las variables de día y mes a los displays
     
+    MOVF ESTADO, W	; Revisa de nuevo el valor de ESTADO
+    SUBLW 5		; Si está en el modo de set alarma
+    BTFSC STATUS, 2
+    CALL MRELOJ		; Carga las variables de min y hor al display
+    
     MOVF CONTMUX, W	; Carga el valor de la variable a W
-    SUBLW 14		; Resta el valor a 1
+    SUBLW 1		; Resta el valor a 1
     BTFSC STATUS, 2	; Revisa si el resultado es 0
     CALL MULTIPLEX	; Llama para la multiplexación cada 5ms
+    
+    CALL REVISIONALARMA
+    CALL APAGARALARMA
     
     BTFSS VRELOJ, 0
     CALL ENCENDERLEDS	; Revisa si está en modo reloj para encender leds
     
     BTFSS VRELOJ, 0
-    CLRF PORTC		; Revisa si está en modo reloj para encender leds
+    CALL APAGARLEDSMODO	; Revisa si está en modo reloj para encender leds
     
     BTFSS VRELOJ, 0	; Revisa si está en el modo reloj
     GOTO RELOJ		; Si sí, continua con el contador de s, min, h, d, m
@@ -477,7 +520,26 @@ REVCAMBIOHOR:
     GOTO INCREMENTODIA	; Si lo está entonces debe incrementar el día
     
     GOTO LOOP		; Si no lo está solo regresa al loop
-
+    
+; ******************************************************************************
+; Tabla para multiplexor
+; ******************************************************************************   
+Table:
+    CLRF PCLATH
+    BSF PCLATH, 0
+    ANDLW 0x0F	    ; Se asegura que hay 8 bits
+    ADDWF PCL
+    RETLW 00111111B ; Regresa 0
+    RETLW 00000110B ; Regresa 1
+    RETLW 01011011B ; Regresa 2
+    RETLW 01001111B ; Regresa 3
+    RETLW 01100110B ; Regresa 4
+    RETLW 01101101B ; Regresa 5
+    RETLW 01111101B ; Regresa 6
+    RETLW 00000111B ; Regresa 7
+    RETLW 01111111B ; Regresa 8
+    RETLW 01101111B ; Regresa 9    
+    
 ; ******************************************************************************
 ; MULTIPLEXADO
 ; ******************************************************************************  
@@ -571,25 +633,6 @@ DISP6:
     RETURN
 
 ; ******************************************************************************
-; Tabla para multiplexor
-; ******************************************************************************   
-Table:
-    CLRF PCLATH
-    BSF PCLATH, 0
-    ANDLW 0x0F	    ; Se asegura que hay 8 bits
-    ADDWF PCL
-    RETLW 00111111B ; Regresa 0
-    RETLW 00000110B ; Regresa 1
-    RETLW 01011011B ; Regresa 2
-    RETLW 01001111B ; Regresa 3
-    RETLW 01100110B ; Regresa 4
-    RETLW 01101101B ; Regresa 5
-    RETLW 01111101B ; Regresa 6
-    RETLW 00000111B ; Regresa 7
-    RETLW 01111111B ; Regresa 8
-    RETLW 01101111B ; Regresa 9    
-
-; ******************************************************************************
 ; SUBRUTINA PARA ENCENDER LEDS
 ; ****************************************************************************** 
 ENCENDERLEDS:
@@ -612,6 +655,15 @@ ENCENDERLEDS:
 LED_ON:
     BSF PORTE, 2	; Si está en 1 limpia el puerto
     RETURN 
+    
+; ******************************************************************************
+; SUBRUTINA PARA APAGAR LEDS DE MODO
+; ******************************************************************************     
+APAGARLEDSMODO:
+    BCF PORTC, 7
+    BCF PORTC, 6
+    BCF PORTC, 5
+    RETURN
     
 ; ******************************************************************************
 ; MODO CAMBIO RELOJ
@@ -865,8 +917,18 @@ CAMBIOMIN:
     CLRF CONTSEG	; Limpia variable de segundos para ajustar la hora
     CLRF CONTSEG2
     BCF PORTE, 2	; Apaga leds titilantes
-    MOVLW 10000000B
+    
+    MOVF ESTADO, W	; Revisa el valor de ESTADO
+    SUBLW 2		; Lo resta a 2
+    BTFSC STATUS, 2	; Si es 0 está en modo cambio de hora/min
+    GOTO LEDINDICADOR	; por lo tanto debe encender el led del estado
+    GOTO CAMBIOMIN1	; Si no, está en modo set alarma y no enciende ese led
+    
+LEDINDICADOR:
+    MOVLW 10000000B	; Pone el bit 7 del puerto c en HIGH
     MOVWF PORTC
+    
+CAMBIOMIN1:
     BTFSS CAMBIO, 0	; Revisa si se presionó el cambio de unidades de min
     GOTO DECMIN		; Si no revisa si se presionó el de decenas de min
     BCF CAMBIO, 0	; Si si limpia la bandera del botón
@@ -1100,7 +1162,99 @@ COMPROBAR30:
     MOVLW 0		; y carga 0 en las unidades
     MOVWF CONTDIA
     RETURN
+  
+; ******************************************************************************
+; MODO CONFIGURACIÓN DE ALARMA
+; ******************************************************************************  
+SET_ALARMA:
+    BCF PORTE, 2	; Apaga leds titilantes
+    MOVLW 00100000B	; Enciende el bit 5 del puerto C
+    MOVWF PORTC
+    INCF ESTADO, F	; Incrementa el estado para avisar que guardó las 
+			; variables del reloj
+    MOVF CONTHOR, W	; Guarda variable de unidades de hora en var temporal
+    MOVWF HORA1_TEMP
     
+    MOVF CONTHOR2, W	; Guarda las decenas de hora en variable temporal
+    MOVWF HORA2_TEMP
+    
+    MOVF CONTMIN, W	; Guarda las unidades de minuto en variable temporal
+    MOVWF MIN1_TEMP
+    
+    MOVF CONTMIN2, W	; Guarda las decenas de minuto en variable temporal
+    MOVWF MIN2_TEMP
+    
+    GOTO CAMBIOMIN	; Inicia los ajustes de la alarma
+    
+ALARMASETED:
+    MOVF VDISP5, W	; Guarda el valor elegido para la alarma de unidad hora
+    MOVWF VALARMA_H1	
+    
+    MOVF VDISP6, W	; Guarda el valor de decenas de hora para la alarma
+    MOVWF VALARMA_H2
+    
+    MOVF VDISP3, W	; Guarda el valor de unidades de minuto para la alarma
+    MOVWF VALARMA_M1
+    
+    MOVF VDISP4, W	; Guarda el valor de decenas de minuto para la alarma
+    MOVWF VALARMA_M2
+    
+    
+    MOVF HORA1_TEMP, W	; Regresa la hora del reloj de la variable temporal
+    MOVWF CONTHOR
+    
+    MOVF HORA2_TEMP, W	; Regresa la hora del reloj de la variable temporal
+    MOVWF CONTHOR2
+    
+    MOVF MIN1_TEMP, W	; Regresa los minutos del reloj de la variable temporal
+    MOVWF CONTMIN
+    
+    MOVF MIN2_TEMP, W	; Regresa los minutos del reloj de la variable temporal
+    MOVWF CONTMIN2
+    
+    CLRF ESTADO		; Limpia la variable estado para regresar al reloj
+    BSF VRELOJ, 1	; Indica que la alarma se configuró
+    GOTO LOOP
+    
+REVISIONALARMA:
+    BTFSS VRELOJ, 1
+    RETURN
+    
+    MOVF VDISP6, W
+    SUBWF VALARMA_H2
+    BTFSS STATUS, 2
+    RETURN
+    
+    MOVF VDISP5, W
+    SUBWF VALARMA_H1
+    BTFSS STATUS, 2
+    RETURN
+    
+    MOVF VDISP4, W
+    SUBWF VALARMA_M2
+    BTFSS STATUS, 2
+    RETURN
+    
+    MOVF VDISP3, W
+    SUBWF VALARMA_M1
+    BTFSS STATUS, 2
+    RETURN
+    
+    BSF PORTC, 4
+    BCF VRELOJ, 1
+    RETURN
+    
+APAGARALARMA:
+    BTFSS PORTC, 4
+    RETURN
+    MOVF ALARMAOFF, W	; Carga el valor de la variable a W
+    SUBLW 200		; Resta el valor a 100
+    BTFSS STATUS, 2	; Revisa si el resultado es 0
+    RETURN	    	; Si no es 0 regresa de la subrutina
+    
+    CLRF ALARMAOFF
+    BCF PORTC, 4
+    RETURN
 ;*******************************************************************************
 ; FIN DEL CÓDIGO
 ;*******************************************************************************     
