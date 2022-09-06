@@ -2834,7 +2834,7 @@ VERIRELOJ:
     CALL MFECHA ; Carga las variables de día y mes a los displays
 
     MOVF CONTMUX, W ; Carga el valor de la variable a W
-    SUBLW 1 ; Resta el valor a 1
+    SUBLW 14 ; Resta el valor a 1
     BTFSC STATUS, 2 ; Revisa si el resultado es 0
     CALL MULTIPLEX ; Llama para la multiplexación cada 5ms
 
@@ -3386,15 +3386,15 @@ CAMBIODIA:
     BCF PORTE, 2 ; Apaga leds titilantes
     MOVLW 01000000B
     MOVWF PORTC
-    BTFSS CAMBIO, 0 ; Revisa si se presionó el cambio de unidades de día
+    BTFSS CAMBIO, 2 ; Revisa si se presionó el cambio de unidades de día
     GOTO DECDIA ; Si no revisa si se presionó el de decenas de día
-    BCF CAMBIO, 0 ; Si si limpia la bandera del botón
+    BCF CAMBIO, 2 ; Si si limpia la bandera del botón
     GOTO INCREMENTODIA ; Procede a realizar el incremento
 
 DECDIA:
-    BTFSS CAMBIO, 1 ; Revisa si se presionó el cambio de decenas de min
+    BTFSS CAMBIO, 3 ; Revisa si se presionó el cambio de decenas de min
     GOTO CAMBIOMES ; Si no se presionó revisa el cambio de horas
-    BCF CAMBIO, 1 ; Si se presionó limpia la bandera del botón
+    BCF CAMBIO, 3 ; Si se presionó limpia la bandera del botón
 
     DECF CONTDIA, F ; Decrementa el contador de días
     MOVF CONTDIA, W
@@ -3467,15 +3467,15 @@ DECDIA30:
     GOTO VERIRELOJ ; Regresa al loop del reloj
 
 CAMBIOMES:
-    BTFSS CAMBIO, 2 ; Revisa si se presionó para incrementar el mes
+    BTFSS CAMBIO, 0 ; Revisa si se presionó para incrementar el mes
     GOTO DECMES ; Si no revisa si se presionó para decrementarlo
-    BCF CAMBIO, 2 ; Si si limpia la bandera del botón
+    BCF CAMBIO, 0 ; Si si limpia la bandera del botón
     GOTO INCREMENTOMES ; Llama a la etiqueta que incrementa el mes
 
 DECMES:
-    BTFSS CAMBIO, 3 ; Revisa si se presionó el botón de decremento mes
+    BTFSS CAMBIO, 1 ; Revisa si se presionó el botón de decremento mes
     GOTO VERIRELOJ ; Si no regresa al loop de reloj para multiplexar
-    BCF CAMBIO, 3 ; Si si limpia la bandera del botón
+    BCF CAMBIO, 1 ; Si si limpia la bandera del botón
 
     DECF CONTMES, F ; Decrementa unidades del mes
     MOVF CONTMES, W
