@@ -65,7 +65,7 @@ PSECT udata_bank0
     DS 1
  CONT5MSLED:	; Variable para saber cuándo llega a 500 ms para encender led
     DS 1
- VALARMA_H1:
+ VALARMA_H1:	; Variables para saber cuándo debe sonar la alarma
     DS 1
  VALARMA_H2:
     DS 1
@@ -73,8 +73,8 @@ PSECT udata_bank0
     DS 1
  VALARMA_M2:
     DS 1
- HORA1_TEMP:
-    DS 1
+ HORA1_TEMP:	; Variables que almacenan temporalmente los valores de hora
+    DS 1	; y minutos mientras se configura la alarma
  HORA2_TEMP:
     DS 1
  MIN1_TEMP:
@@ -147,10 +147,10 @@ RTMR0:
     BCF INTCON, 2	; Limpia la bandera de interrupción
     BANKSEL TMR0	
     INCF CONT5MS	; Incrementa la variable de 10 ms
-    MOVLW 217		; Carga el valor de n al TMR0
+    MOVLW 6		; Carga el valor de n al TMR0
     MOVWF TMR0	
-    INCF CONTMUX	; Incrementa variable para el multiplexor
-    INCF CONT5MSLED	; Incrementa variable para los led de 500ms
+    INCF CONTMUX, F	; Incrementa variable para el multiplexor
+    INCF CONT5MSLED, F	; Incrementa variable para los led de 500ms
     GOTO POP
     
 RRBIF:		
@@ -288,9 +288,9 @@ MAIN:
     BCF OPTION_REG, 5	; T0CS FOSC/4 modo temporizador
     BCF OPTION_REG, 3	; PSA asignar presscaler para TMR0
     
-    BSF OPTION_REG, 2	
+    BCF OPTION_REG, 2	
     BSF OPTION_REG, 1
-    BCF OPTION_REG, 0	; Prescaler 1:128
+    BSF OPTION_REG, 0	; Prescaler 1:16
     
     BCF OPTION_REG, 7	; NO RBPU
     
@@ -314,7 +314,7 @@ MAIN:
     MOVWF WPUB	    ; Pull ups del puerto B
     
     BANKSEL TMR0
-    MOVLW 217	    ; Valor calculado para 5 ms
+    MOVLW 6	    ; Valor calculado para 4 ms
     MOVWF TMR0	    ; Se carga el valor de TMR0
 	
     
@@ -355,8 +355,6 @@ MAIN:
     CLRF HORA2_TEMP
     CLRF MIN1_TEMP
     CLRF MIN2_TEMP
-    
-    BSF PORTC, 4
     
 ; ******************************************************************************
 ; LOOP PRINCIPAL
@@ -428,10 +426,11 @@ VERIRELOJ:
     BTFSC STATUS, 2	; Revisa si el resultado es 0
     CALL MULTIPLEX	; Llama para la multiplexación cada 5ms
     
-    PAGESEL REVISIONALARMA
-    CALL REVISIONALARMA
-    PAGESEL VERIRELOJ
-    PAGESEL APAGARALARMA
+    PAGESEL REVISIONALARMA  ; Revisa continuamente si la alarma está activada 
+    CALL REVISIONALARMA	    ; y si ya es hora de que suena
+    CALL PULSOSALARMA	    ; Envía pulsos al buzzer cada vez que se repite la 
+    PAGESEL VERIRELOJ	    ; instrucción
+    PAGESEL APAGARALARMA    ; Si la alarma está encendida la debe apagar
     CALL APAGARALARMA
     PAGESEL VERIRELOJ
     
@@ -452,7 +451,7 @@ VERIRELOJ:
 ; ******************************************************************************     
 RELOJ:    
     MOVF CONT5MS, W	; Carga el valor de la variable a W
-    SUBLW 200		; Resta el valor a 200
+    SUBLW 250		; Resta el valor a 250
     BTFSS STATUS, 2	; Revisa si el resultado es 0
     GOTO VERIRELOJ	; Si no es 0 regresa a verificación del reloj
     CLRF CONT5MS	; Si es 0 limpia la variable (Ya pasó 1 segundo)
@@ -708,7 +707,7 @@ MFECHA:
     MOVF CONTMES2, W	; Carga el contador de decenas de meses a display 6
     MOVWF VDISP4
     
-    MOVLW 2
+    MOVLW 2		; Configurado para mostrar el año 22 (temporal)
     MOVWF VDISP1
     MOVWF VDISP2
     
@@ -928,7 +927,7 @@ CAMBIOMIN:
     GOTO CAMBIOMIN1	; Si no, está en modo set alarma y no enciende ese led
     
 LEDINDICADOR:
-    MOVLW 10010000B	; Pone el bit 7 del puerto c en HIGH
+    MOVLW 10000000B	; Pone el bit 7 del puerto c en HIGH
     MOVWF PORTC
     
 CAMBIOMIN1:
@@ -1000,7 +999,7 @@ CAMBIODIA:
     BSF VRELOJ, 0	; Indica que ya no está en modo contador de reloj-fecha
     CALL REVISIONDIASMES
     BCF PORTE, 2	; Apaga leds titilantes
-    MOVLW 01010000B
+    MOVLW 01000000B
     MOVWF PORTC
     BTFSS CAMBIO, 2	; Revisa si se presionó el cambio de unidades de día
     GOTO DECDIA		; Si no revisa si se presionó el de decenas de día
@@ -1171,7 +1170,7 @@ COMPROBAR30:
 ; ******************************************************************************  
 SET_ALARMA:
     BCF PORTE, 2	; Apaga leds titilantes
-    MOVLW 00110000B	; Enciende el bit 5 del puerto C
+    MOVLW 00100000B	; Enciende el bit 5 del puerto C
     MOVWF PORTC
     INCF ESTADO, F	; Incrementa el estado para avisar que guardó las 
 			; variables del reloj
@@ -1221,43 +1220,63 @@ ALARMASETED:
     GOTO LOOP
     
 REVISIONALARMA:
-    BTFSS VRELOJ, 1
-    RETURN
-    
-    MOVF VALARMA_H2, W
-    SUBWF VDISP6, 0
-    BTFSS STATUS, 2
-    RETURN
-    
-    MOVF VALARMA_H1, W
+    BTFSS VRELOJ, 1	; Revisa si la alarma está configurada
+    RETURN		; Si no, regresa de la subrutina
+	
+    MOVF VALARMA_H2, W	; Si si, compara el valor de las decenas de horas
+    SUBWF VDISP6, 0	; de la alarma con el valor que muestra el display
+    BTFSS STATUS, 2	; Si no son iguales regresa
+    RETURN	    
+	
+    MOVF VALARMA_H1, W	; Si son iguales compara las unidades de hora
     SUBWF VDISP5, 0
-    BTFSS STATUS, 2
+    BTFSS STATUS, 2	; Si no son iguales regresa de la subrutina
     RETURN
     
-    MOVF VALARMA_M2, W
+    MOVF VALARMA_M2, W	; Compara el valor de decenas de minutos
     SUBWF VDISP4, 0
-    BTFSS STATUS, 2
+    BTFSS STATUS, 2	; Si no son iguales regresa de la subrutina
     RETURN
     
-    MOVF VALARMA_M1, W
-    SUBWF VDISP3, 0
-    BTFSS STATUS, 2
+    MOVF VALARMA_M1, W	; Compara el valor de las unidades de minutos
+    SUBWF VDISP3, 0	
+    BTFSS STATUS, 2	; Si no son iguales regresa de la subrutina
     RETURN
     
+    BSF PORTC, 4	; Si son iguales todos los valores comparados, enciende
+    BCF VRELOJ, 1	; la alarma e indica que ya se repita a la misma hora
+    BSF VRELOJ, 2	; Avisa que mientras este bit esté encendido la alarma
+			; debe seguir sonando
+    RETURN		; Regresa de la subrutina
+    
+PULSOSALARMA:
+    BTFSS VRELOJ, 2	; Revisa si debe seguir enviando pulsos al buzzer
+    RETURN    
+    BTFSC PORTC, 4	; Si el buzzer tiene un 1 lo manda a poner en 0
+    GOTO ESTADODOWN
+    BSF PORTC, 4	; Si tiene un 0 le pone un 1 cada vez que la instrucción
+    RETURN		; Se repite (Debe sonar según la frecuencia con la que
+			; se ejecutan las instrucciones < 4MHz
+    
+ESTADODOWN:
     BCF PORTC, 4
-    BCF VRELOJ, 1
     RETURN
     
 APAGARALARMA:
-    BTFSC PORTC, 4
+    BTFSS VRELOJ, 2	; Revisa si está sonando la alarma
+    RETURN		; Si no, regresa de la subrutina
+    
+    BTFSC VRELOJ, 0	; Revisa si está en el estado de reloj-fecha
+    GOTO APAGAR		; si no, apaga la alarma cuando se hacen cambios
+    
+    MOVF CONTSEG2, W	; Si si, compara el valor de decenas de segundos
+    SUBLW 1		; con 1 para saber si pasaron 10 segundos
+    BTFSS STATUS, 2	; Si no los han pasado, regresa de la subrutina
     RETURN
     
-    MOVF CONTSEG2, W
-    SUBLW 1
-    BTFSS STATUS, 2
-    RETURN
-    
-    BSF PORTC, 4
+APAGAR:
+    BCF VRELOJ, 2	; Si ya pasaron apaga la alarma y regresa al loop
+    BCF PORTC, 4
     RETURN
 ;*******************************************************************************
 ; FIN DEL CÓDIGO
