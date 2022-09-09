@@ -2536,7 +2536,7 @@ PSECT udata_shr
     DS 1
  STATUS_TEMP: ; Variable para almacenar STATUS durante interrupciones
     DS 1
- CONT5MS: ; Contador de 10 ms
+ CONT4MS: ; Contador de 4 ms
     DS 1
  CONTMUX: ; Contador para la multiplexación cada 50 ms
     DS 1
@@ -2595,8 +2595,8 @@ ISR: ; Vector principal de interrupciones
 RTMR0:
     BCF INTCON, 2 ; Limpia la bandera de interrupción
     BANKSEL TMR0
-    INCF CONT5MS ; Incrementa la variable de 10 ms
-    MOVLW 6 ; Carga el valor de n al TMR0
+    INCF CONT4MS ; Incrementa la variable de 10 ms
+    MOVLW 7 ; Carga el valor de n al TMR0
     MOVWF TMR0
     INCF CONTMUX, F ; Incrementa variable para el multiplexor
     INCF CONT5MSLED, F ; Incrementa variable para los led de 500ms
@@ -2763,7 +2763,7 @@ MAIN:
     MOVWF WPUB ; Pull ups del puerto B
 
     BANKSEL TMR0
-    MOVLW 6 ; Valor calculado para 4 ms
+    MOVLW 7 ; Valor calculado para 4 ms
     MOVWF TMR0 ; Se carga el valor de TMR0
 
 
@@ -2786,7 +2786,7 @@ MAIN:
     CLRF CONTDIA2 ; Limpia variables que inician en 0
     CLRF CONTMES2
 
-    CLRF CONT5MS
+    CLRF CONT4MS
     CLRF CONTMUX
     CLRF CONT5MSLED
     CLRF CONTSEG
@@ -2899,11 +2899,11 @@ VERIRELOJ:
 ; CONTADOR DE RELOJ
 ; ******************************************************************************
 RELOJ:
-    MOVF CONT5MS, W ; Carga el valor de la variable a W
+    MOVF CONT4MS, W ; Carga el valor de la variable a W
     SUBLW 250 ; Resta el valor a 250
     BTFSS STATUS, 2 ; Revisa si el resultado es 0
     GOTO VERIRELOJ ; Si no es 0 regresa a verificación del reloj
-    CLRF CONT5MS ; Si es 0 limpia la variable (Ya pasó 1 segundo)
+    CLRF CONT4MS ; Si es 0 limpia la variable (Ya pasó 1 segundo)
 
     INCF CONTSEG, F ; Incrementa la variable de segundos
     MOVF CONTSEG, W
